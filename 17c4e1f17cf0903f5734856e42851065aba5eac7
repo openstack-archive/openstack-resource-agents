@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Adam Spiers <aspiers@suse.com>
+Workflow+1: Adam Spiers <aspiers@suse.com>
+Code-Review+1: Ben Swartzlander <ben@swartzlander.org>
+Submitted-by: Jenkins
+Submitted-at: Fri, 23 Oct 2015 13:54:52 +0000
+Reviewed-on: https://review.openstack.org/238166
+Project: openstack/openstack-resource-agents
+Branch: refs/heads/master
