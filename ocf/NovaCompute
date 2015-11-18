@@ -159,7 +159,7 @@ nova_start() {
 	return $OCF_SUCCESS
     fi
 
-    state=$(attrd_updater -p -n evacute -N ${NOVA_HOST} | sed -e 's/.*value=//' | tr -d '"' )
+    state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | sed -e 's/.*value=//' | tr -d '"' )
     if [ "x$state" = x ]; then
 	: never been fenced
 
@@ -171,7 +171,7 @@ nova_start() {
     else
 	ocf_log info "Waiting for pending evacuations from ${NOVA_HOST}"
 	while [ "x$state" != "xno" ]; do
-	    state=$(attrd_updater -p -n evacute -N ${NOVA_HOST} | sed -e 's/.*value=//' | tr -d '"' )
+	    state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | sed -e 's/.*value=//' | tr -d '"' )
 	    sleep 5
 	done
 
