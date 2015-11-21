@@ -219,7 +219,12 @@ evacuate_monitor() {
 	return $OCF_NOT_RUNNING
     fi
 
-    handle_evacuations $(attrd_updater -n evacuate -A | tr '="' '  ' | awk '{print $4" "$6}')
+    handle_evacuations $(
+        attrd_updater -n evacute -A |
+            sed 's/ value=""/ value="no"/' |
+            tr '="' '  ' |
+            awk '{print $4" "$6}'
+    )
     return $OCF_SUCCESS
 }
 
