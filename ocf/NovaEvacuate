@@ -198,7 +198,7 @@ handle_evacuations() {
 		return $OCF_SUCCESS
 	    fi
 
-	    fence_compute ${fence_options} -o reboot -n $node
+	    fence_compute ${fence_options} -o off -n $node
 	    rc=$?
 
 	    if [ $rc = 0 ]; then
