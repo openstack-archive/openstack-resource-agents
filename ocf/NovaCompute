@@ -99,6 +99,24 @@ Nova API location (internal, public or admin URL)
 <content type="string" default="" />
 </parameter>
 
+<parameter name="region_name" unique="0" required="0">
+<longdesc lang="en">
+Region name for connecting to nova.
+</longdesc>
+<shortdesc lang="en">Region name</shortdesc>
+<content type="string" default="" />
+</parameter>
+
+<parameter name="insecure" unique="0" required="0">
+<longdesc lang="en">
+Explicitly allow client to perform "insecure" TLS (https) requests.
+The server's certificate will not be verified against any certificate authorities.
+This option should be used with caution.
+</longdesc>
+<shortdesc lang="en">Allow insecure TLS requests</shortdesc>
+<content type="boolean" default="0" />
+</parameter>
+
 <parameter name="no_shared_storage" unique="0" required="0">
 <longdesc lang="en">
 Disable shared storage recovery for instances. Use at your own risk!
@@ -285,6 +303,16 @@ nova_validate() {
     fi
 
     fence_options="${fence_options} -t ${OCF_RESKEY_tenant_name}"
+
+    if [ -n "${OCF_RESKEY_region_name}" ]; then
+	fence_options="${fence_options} --region-name ${OCF_RESKEY_region_name}"
+    fi
+
+    if [ -n "${OCF_RESKEY_insecure}" ]; then
+	if ocf_is_true "${OCF_RESKEY_insecure}"; then
+	    fence_options="${fence_options} --insecure"
+	fi
+    fi
 
     if [ -n "${OCF_RESKEY_domain}" ]; then
 	fence_options="${fence_options} -d ${OCF_RESKEY_domain}"
