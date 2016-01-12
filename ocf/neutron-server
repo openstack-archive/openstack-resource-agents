@@ -101,7 +101,7 @@ Location of the OpenStack Neutron Server (neutron-server) configuration file
 <content type="string" default="${OCF_RESKEY_config_default}" />
 </parameter>
 
-<parameter name="plugin config" unique="0" required="0">
+<parameter name="plugin_config" unique="0" required="0">
 <longdesc lang="en">
 Location of the OpenStack Default Plugin (Open-vSwitch) configuration file
 </longdesc>
