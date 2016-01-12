@@ -38,7 +38,7 @@
 
 OCF_RESKEY_binary_default="neutron-server"
 OCF_RESKEY_config_default="/etc/neutron/neutron.conf"
-OCF_RESKEY_plugin_config_default="/etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini"
+OCF_RESKEY_plugin_config_default="/etc/neutron/plugins/ml2/ml2_conf.ini"
 OCF_RESKEY_user_default="neutron"
 OCF_RESKEY_pid_default="$HA_RSCTMP/$OCF_RESOURCE_INSTANCE.pid"
 OCF_RESKEY_url_default="http://127.0.0.1:9696"
@@ -101,7 +101,7 @@ Location of the OpenStack Neutron Server (neutron-server) configuration file
 <content type="string" default="${OCF_RESKEY_config_default}" />
 </parameter>
 
-<parameter name="plugin config" unique="0" required="0">
+<parameter name="plugin_config" unique="0" required="0">
 <longdesc lang="en">
 Location of the OpenStack Default Plugin (Open-vSwitch) configuration file
 </longdesc>
