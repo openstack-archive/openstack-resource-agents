@@ -250,7 +250,7 @@ nova_validate() {
     rc=$OCF_SUCCESS
     fence_options=""
 
-    check_binary openstack-config
+    check_binary crudini
     check_binary nova-compute
 
     if [ ! -f /etc/nova/nova.conf ]; then
@@ -310,7 +310,7 @@ nova_validate() {
     # we take a chance here and hope that host is either not configured
     # or configured in nova.conf
 
-    NOVA_HOST=$(openstack-config --get /etc/nova/nova.conf DEFAULT host 2>/dev/null)
+    NOVA_HOST=$(crudini --get /etc/nova/nova.conf DEFAULT host 2>/dev/null)
     if [ $? = 1 ]; then
 	if [ "x${OCF_RESKEY_domain}" != x ]; then
 	    NOVA_HOST=$(uname -n | awk -F. '{print $1}')
@@ -320,7 +320,7 @@ nova_validate() {
     fi
 
     # We only need to check a configured value, calculated ones are fine
-    openstack-config --get /etc/nova/nova.conf DEFAULT host 2>/dev/null
+    crudini --get /etc/nova/nova.conf DEFAULT host 2>/dev/null
     if [ $? = 0 ]; then
 	if [ "x${OCF_RESKEY_domain}" != x ]; then
 	    short_host=$(uname -n | awk -F. '{print $1}')
