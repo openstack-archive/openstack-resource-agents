@@ -52,7 +52,7 @@ usage() {
     cat <<UEND
         usage: $0 (start|stop|validate-all|meta-data|status|monitor)
 
-        $0 manages an OpenStack Orchestration Engine Service (heat-engine) process as an HA resource 
+        $0 manages an OpenStack Orchestration Engine Service (heat-engine) process as an HA resource
 
         The 'start' operation starts the heat-engine service.
         The 'stop' operation stops the heat-engine service.
@@ -73,7 +73,7 @@ meta_data() {
 
 <longdesc lang="en">
 Resource agent for the OpenStack Orchestration Engine Service (heat-engine)
-May manage a heat-engine instance or a clone set that 
+May manage a heat-engine instance or a clone set that
 creates a distributed heat-engine cluster.
 </longdesc>
 <shortdesc lang="en">Manages the OpenStack Orchestration Engine Service (heat-engine)</shortdesc>
@@ -111,21 +111,21 @@ The pid file to use for this OpenStack Orchestration Engine Service (heat-engine
 <content type="string" default="${OCF_RESKEY_pid_default}" />
 </parameter>
 
-<parameter name="amqp_server_port" unique="0" required="0">                                                                                                                                                              
-<longdesc lang="en">                                                                                                                                                                                                      
-The listening port number of the AMQP server. Use for monitoring purposes                                                                                                                                        
-</longdesc>                                                                                                                                                                                                               
-<shortdesc lang="en">AMQP listening port</shortdesc>                                                                                                                                                                      
-<content type="integer" default="${OCF_RESKEY_amqp_server_port_default}" />                                                                                                                                              
-</parameter>      
+<parameter name="amqp_server_port" unique="0" required="0">
+<longdesc lang="en">
+The listening port number of the AMQP server. Use for monitoring purposes
+</longdesc>
+<shortdesc lang="en">AMQP listening port</shortdesc>
+<content type="integer" default="${OCF_RESKEY_amqp_server_port_default}" />
+</parameter>
 
-<parameter name="zeromq" unique="0" required="0">                                                                                                                                                              
-<longdesc lang="en">                                                                                                                                                                                                      
-If zeromq is used, this will disable the connection test to the AMQP server. Use for monitoring purposes                                                                                                                               
-</longdesc>                                                                                                                                                                                                               
-<shortdesc lang="en">Zero-MQ usage</shortdesc>                                                                                                                                                                      
-<content type="boolean" default="${OCF_RESKEY_zeromq_default}" />                                                                                                                                              
-</parameter>  
+<parameter name="zeromq" unique="0" required="0">
+<longdesc lang="en">
+If zeromq is used, this will disable the connection test to the AMQP server. Use for monitoring purposes
+</longdesc>
+<shortdesc lang="en">Zero-MQ usage</shortdesc>
+<content type="boolean" default="${OCF_RESKEY_zeromq_default}" />
+</parameter>
 
 <parameter name="additional_parameters" unique="0" required="0">
 <longdesc lang="en">
@@ -160,7 +160,7 @@ heat_engine_check_port() {
 
     local int
     local cnt
-    
+
     int="$1"
     cnt=${#int}
     echo $int |egrep -qx '[0-9]+(:[0-9]+)?(,[0-9]+(:[0-9]+)?)*'
@@ -177,7 +177,7 @@ heat_engine_validate() {
     check_binary $OCF_RESKEY_binary
     check_binary netstat
     heat_engine_check_port $OCF_RESKEY_amqp_server_port
-    
+
     # A config file on shared storage that is not available
     # during probes is OK.
     if [ ! -f $OCF_RESKEY_config ]; then

@@ -53,7 +53,7 @@ usage() {
     cat <<UEND
         usage: $0 (start|stop|validate-all|meta-data|status|monitor)
 
-        $0 manages an OpenStack ImageService (glance-api) process as an HA resource 
+        $0 manages an OpenStack ImageService (glance-api) process as an HA resource
 
         The 'start' operation starts the imaging service.
         The 'stop' operation stops the imaging service.
@@ -74,7 +74,7 @@ meta_data() {
 
 <longdesc lang="en">
 Resource agent for the OpenStack ImageService Service (glance-api)
-May manage a glance-api instance or a clone set that 
+May manage a glance-api instance or a clone set that
 creates a distributed glance-api cluster.
 </longdesc>
 <shortdesc lang="en">Manages the OpenStack ImageService (glance-api)</shortdesc>

@@ -110,14 +110,14 @@ The pid file to use for this OpenStack Cinder Volume (cinder-volume) instance
 <content type="string" default="${OCF_RESKEY_pid_default}" />
 </parameter>
 
-<parameter name="amqp_server_port" unique="0" required="0">                                                                                                                                                              
-<longdesc lang="en">                                                                                                                                                                                                      
-The listening port number of the AMQP server. Mandatory to perform a monitor check                                                                                                                                        
-</longdesc>                                                                                                                                                                                                               
-<shortdesc lang="en">AMQP listening port</shortdesc>                                                                                                                                                                      
-<content type="integer" default="${OCF_RESKEY_amqp_server_port_default}" />                                                                                                                                              
-</parameter>      
- 
+<parameter name="amqp_server_port" unique="0" required="0">
+<longdesc lang="en">
+The listening port number of the AMQP server. Mandatory to perform a monitor check
+</longdesc>
+<shortdesc lang="en">AMQP listening port</shortdesc>
+<content type="integer" default="${OCF_RESKEY_amqp_server_port_default}" />
+</parameter>
+
 <parameter name="multibackend" unique="0" required="0">
 <longdesc lang="en">
 If the multi-backend is enabled, the monitor check is slightly different since cinder-volume spawns one thread for each backend.
@@ -156,7 +156,7 @@ cinder_volume_validate() {
 
     check_binary $OCF_RESKEY_binary
     check_binary netstat
-    
+
     # A config file on shared storage that is not available
     # during probes is OK.
     if [ ! -f $OCF_RESKEY_config ]; then

@@ -151,7 +151,7 @@ ceilometer_agent_central_check_port() {
 
     local int
     local cnt
-    
+
     int="$1"
     cnt=${#int}
     echo $int |egrep -qx '[0-9]+(:[0-9]+)?(,[0-9]+(:[0-9]+)?)*'
@@ -168,7 +168,7 @@ ceilometer_agent_central_validate() {
     check_binary $OCF_RESKEY_binary
     check_binary netstat
     ceilometer_agent_central_check_port $OCF_RESKEY_amqp_server_port
-    
+
     # A config file on shared storage that is not available
     # during probes is OK.
     if [ ! -f $OCF_RESKEY_config ]; then

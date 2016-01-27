@@ -53,7 +53,7 @@ usage() {
     cat <<UEND
         usage: $0 (start|stop|validate-all|meta-data|status|monitor)
 
-        $0 manages an OpenStack Keystone process as an HA resource 
+        $0 manages an OpenStack Keystone process as an HA resource
 
         The 'start' operation starts the identity service.
         The 'stop' operation stops the identity service.
@@ -74,7 +74,7 @@ meta_data() {
 
 <longdesc lang="en">
 Resource agent for the OpenStack Identity Service (Keystone)
-May manage a keystone-all instance or a clone set that 
+May manage a keystone-all instance or a clone set that
 creates a distributed keystone cluster.
 </longdesc>
 <shortdesc lang="en">Manages the OpenStack Identity Service (Keystone)</shortdesc>
@@ -252,7 +252,7 @@ keystone_monitor() {
             return $OCF_NOT_RUNNING
         fi
     fi
-    
+
     ocf_log debug "OpenStack Identity (Keystone) monitor succeeded"
     return $OCF_SUCCESS
 }

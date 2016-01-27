@@ -55,7 +55,7 @@ usage() {
     cat <<UEND
         usage: $0 (start|stop|validate-all|meta-data|status|monitor)
 
-        $0 manages an OpenStack Nova ConsoleAuth (nova-consoleauth) process as an HA resource 
+        $0 manages an OpenStack Nova ConsoleAuth (nova-consoleauth) process as an HA resource
 
         The 'start' operation starts the nova-consoleauth service.
         The 'stop' operation stops the nova-consoleauth service.
@@ -76,7 +76,7 @@ meta_data() {
 
 <longdesc lang="en">
 Resource agent for the OpenStack Nova Console Auth Service (nova-consoleauth)
-May manage a nova-consoleauth instance or a clone set that 
+May manage a nova-consoleauth instance or a clone set that
 creates a distributed nova-consoleauth cluster.
 </longdesc>
 <shortdesc lang="en">Manages the OpenStack Nova Console Auth (nova-consoleauth)</shortdesc>
@@ -114,28 +114,28 @@ The pid file to use for this OpenStack Nova Console Auth (nova-consoleauth) inst
 <content type="string" default="${OCF_RESKEY_pid_default}" />
 </parameter>
 
-<parameter name="database_server_port" unique="0" required="0">                                                                                                                                                              
-<longdesc lang="en">                                                                                                                                                                                                      
-The listening port number of the database server. Mandatory to perform a monitor check                                                                                                                                        
-</longdesc>                                                                                                                                                                                                               
-<shortdesc lang="en">Database listening port</shortdesc>                                                                                                                                                                      
-<content type="integer" default="${OCF_RESKEY_database_server_port_default}" />                                                                                                                                              
-</parameter>  
+<parameter name="database_server_port" unique="0" required="0">
+<longdesc lang="en">
+The listening port number of the database server. Mandatory to perform a monitor check
+</longdesc>
+<shortdesc lang="en">Database listening port</shortdesc>
+<content type="integer" default="${OCF_RESKEY_database_server_port_default}" />
+</parameter>
 
-<parameter name="amqp_server_port" unique="0" required="0">                                                                                                                                                              
-<longdesc lang="en">                                                                                                                                                                                                      
-The listening port number of the AMQP server. Mandatory to perform a monitor check                                                                                                                                        
-</longdesc>                                                                                                                                                                                                               
-<shortdesc lang="en">AMQP listening port</shortdesc>                                                                                                                                                                      
-<content type="integer" default="${OCF_RESKEY_amqp_server_port_default}" />                                                                                                                                              
-</parameter>  
+<parameter name="amqp_server_port" unique="0" required="0">
+<longdesc lang="en">
+The listening port number of the AMQP server. Mandatory to perform a monitor check
+</longdesc>
+<shortdesc lang="en">AMQP listening port</shortdesc>
+<content type="integer" default="${OCF_RESKEY_amqp_server_port_default}" />
+</parameter>
 
-<parameter name="zeromq" unique="0" required="0">                                                                                                                                                              
-<longdesc lang="en">                                                                                                                                                                                                      
-If zeromq is used, this will disable the connection test to the AMQP server                                                                                                                                    
-</longdesc>                                                                                                                                                                                                               
-<shortdesc lang="en">Zero-MQ usage</shortdesc>                                                                                                                                                                      
-<content type="boolean" default="${OCF_RESKEY_zeromq_default}" />                                                                                                                                              
+<parameter name="zeromq" unique="0" required="0">
+<longdesc lang="en">
+If zeromq is used, this will disable the connection test to the AMQP server
+</longdesc>
+<shortdesc lang="en">Zero-MQ usage</shortdesc>
+<content type="boolean" default="${OCF_RESKEY_zeromq_default}" />
 </parameter>
 
 <parameter name="additional_parameters" unique="0" required="0">
@@ -171,7 +171,7 @@ nova_consoleauth_check_port() {
 
     local int
     local cnt
-    
+
     int="$1"
     cnt=${#int}
     echo $int |egrep -qx '[0-9]+(:[0-9]+)?(,[0-9]+(:[0-9]+)?)*'
@@ -187,7 +187,7 @@ nova_consoleauth_validate() {
 
     check_binary $OCF_RESKEY_binary
     check_binary netstat
-    
+
     nova_consoleauth_check_port $OCF_RESKEY_database_server_port
     nova_consoleauth_check_port $OCF_RESKEY_amqp_server_port
 
@@ -239,7 +239,7 @@ nova_consoleauth_monitor() {
     local rc_amqp
     local console_db_check
     local console_amqp_check
-    
+
     nova_consoleauth_status
     rc=$?
 
@@ -270,7 +270,7 @@ nova_consoleauth_monitor() {
 		    return $OCF_NOT_RUNNING
 		fi
 	fi
-    
+
     ocf_log debug "OpenStack Nova Console Auth (nova-consoleauth) monitor succeeded"
     return $OCF_SUCCESS
 }
