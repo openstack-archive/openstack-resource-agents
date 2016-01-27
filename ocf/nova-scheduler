@@ -56,7 +56,7 @@ usage() {
     cat <<UEND
         usage: $0 (start|stop|validate-all|meta-data|status|monitor)
 
-        $0 manages an OpenStack SchedulerService (nova-scheduler) process as an HA resource 
+        $0 manages an OpenStack SchedulerService (nova-scheduler) process as an HA resource
 
         The 'start' operation starts the scheduler service.
         The 'stop' operation stops the scheduler service.
@@ -77,7 +77,7 @@ meta_data() {
 
 <longdesc lang="en">
 Resource agent for the OpenStack Nova Scheduler Service (nova-scheduler)
-May manage a nova-scheduler instance or a clone set that 
+May manage a nova-scheduler instance or a clone set that
 creates a distributed nova-scheduler cluster.
 </longdesc>
 <shortdesc lang="en">Manages the OpenStack Scheduler Service (nova-scheduler)</shortdesc>
@@ -115,29 +115,29 @@ The pid file to use for this OpenStack Scheduler Service (nova-scheduler) instan
 <content type="string" default="${OCF_RESKEY_pid_default}" />
 </parameter>
 
-<parameter name="database_server_port" unique="0" required="0">                                                                                                                                                              
-<longdesc lang="en">                                                                                                                                                                                                      
-The listening port number of the database server. Use for monitoring purposes                                                                                                                                        
-</longdesc>                                                                                                                                                                                                               
-<shortdesc lang="en">Database listening port</shortdesc>                                                                                                                                                                      
-<content type="integer" default="${OCF_RESKEY_database_server_port_default}" />                                                                                                                                              
-</parameter>  
+<parameter name="database_server_port" unique="0" required="0">
+<longdesc lang="en">
+The listening port number of the database server. Use for monitoring purposes
+</longdesc>
+<shortdesc lang="en">Database listening port</shortdesc>
+<content type="integer" default="${OCF_RESKEY_database_server_port_default}" />
+</parameter>
 
-<parameter name="amqp_server_port" unique="0" required="0">                                                                                                                                                              
-<longdesc lang="en">                                                                                                                                                                                                      
-The listening port number of the AMQP server. Use for monitoring purposes                                                                                                                                        
-</longdesc>                                                                                                                                                                                                               
-<shortdesc lang="en">AMQP listening port</shortdesc>                                                                                                                                                                      
-<content type="integer" default="${OCF_RESKEY_amqp_server_port_default}" />                                                                                                                                              
-</parameter>      
+<parameter name="amqp_server_port" unique="0" required="0">
+<longdesc lang="en">
+The listening port number of the AMQP server. Use for monitoring purposes
+</longdesc>
+<shortdesc lang="en">AMQP listening port</shortdesc>
+<content type="integer" default="${OCF_RESKEY_amqp_server_port_default}" />
+</parameter>
 
-<parameter name="zeromq" unique="0" required="0">                                                                                                                                                              
-<longdesc lang="en">                                                                                                                                                                                                      
-If zeromq is used, this will disable the connection test to the AMQP server. Use for monitoring purposes                                                                                                                               
-</longdesc>                                                                                                                                                                                                               
-<shortdesc lang="en">Zero-MQ usage</shortdesc>                                                                                                                                                                      
-<content type="boolean" default="${OCF_RESKEY_zeromq_default}" />                                                                                                                                              
-</parameter>  
+<parameter name="zeromq" unique="0" required="0">
+<longdesc lang="en">
+If zeromq is used, this will disable the connection test to the AMQP server. Use for monitoring purposes
+</longdesc>
+<shortdesc lang="en">Zero-MQ usage</shortdesc>
+<content type="boolean" default="${OCF_RESKEY_zeromq_default}" />
+</parameter>
 
 <parameter name="additional_parameters" unique="0" required="0">
 <longdesc lang="en">
@@ -172,7 +172,7 @@ nova_scheduler_check_port() {
 
     local int
     local cnt
-    
+
     int="$1"
     cnt=${#int}
     echo $int |egrep -qx '[0-9]+(:[0-9]+)?(,[0-9]+(:[0-9]+)?)*'
@@ -190,7 +190,7 @@ nova_scheduler_validate() {
     check_binary netstat
     nova_scheduler_check_port $OCF_RESKEY_database_server_port
     nova_scheduler_check_port $OCF_RESKEY_amqp_server_port
-    
+
     # A config file on shared storage that is not available
     # during probes is OK.
     if [ ! -f $OCF_RESKEY_config ]; then

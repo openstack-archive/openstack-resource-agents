@@ -54,7 +54,7 @@ usage() {
     cat <<UEND
         usage: $0 (start|stop|validate-all|meta-data|status|monitor)
 
-        $0 manages an OpenStack L3 Service (neutron-l3-agent) process as an HA resource 
+        $0 manages an OpenStack L3 Service (neutron-l3-agent) process as an HA resource
 
         The 'start' operation starts the networking service.
         The 'stop' operation stops the networking service.
@@ -75,7 +75,7 @@ meta_data() {
 
 <longdesc lang="en">
 Resource agent for the OpenStack Neutron L3 Service (neutron-l3-agent)
-May manage a neutron-l3-agent instance or a clone set that 
+May manage a neutron-l3-agent instance or a clone set that
 creates a distributed neutron-l3-agent cluster.
 </longdesc>
 <shortdesc lang="en">Manages the OpenStack L3 Service (neutron-l3-agent)</shortdesc>
@@ -119,15 +119,15 @@ The pid file to use for this OpenStack L3 Service (neutron-l3-agent) instance
 </longdesc>
 <shortdesc lang="en">OpenStack L3 Service (neutron-l3-agent) pid file</shortdesc>
 <content type="string" default="${OCF_RESKEY_pid_default}" />
-</parameter>  
+</parameter>
 
-<parameter name="neutron_server_port" unique="0" required="0">                                                                                                                                                              
-<longdesc lang="en">                                                                                                                                                                                                      
-The listening port number of the AMQP server. Mandatory to perform a monitor check                                                                                                                                        
-</longdesc>                                                                                                                                                                                                               
-<shortdesc lang="en">AMQP listening port</shortdesc>                                                                                                                                                                      
-<content type="integer" default="${OCF_RESKEY_neutron_server_port_default}" />                                                                                                                                              
-</parameter>      
+<parameter name="neutron_server_port" unique="0" required="0">
+<longdesc lang="en">
+The listening port number of the AMQP server. Mandatory to perform a monitor check
+</longdesc>
+<shortdesc lang="en">AMQP listening port</shortdesc>
+<content type="integer" default="${OCF_RESKEY_neutron_server_port_default}" />
+</parameter>
 
 
 <parameter name="additional_parameters" unique="0" required="0">
@@ -206,7 +206,7 @@ neutron_l3_agent_monitor() {
     local rc
     local pid
     local network_amqp_check
-    
+
     neutron_l3_agent_status
     rc=$?
 

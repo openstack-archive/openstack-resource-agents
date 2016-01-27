@@ -52,7 +52,7 @@ usage() {
     cat <<UEND
         usage: $0 (start|stop|validate-all|meta-data|status|monitor)
 
-        $0 manages an OpenStack Nova VNC Console (nova-novncproxy) process as an HA resource 
+        $0 manages an OpenStack Nova VNC Console (nova-novncproxy) process as an HA resource
 
         The 'start' operation starts the console service.
         The 'stop' operation stops the console service.
@@ -73,7 +73,7 @@ meta_data() {
 
 <longdesc lang="en">
 Resource agent for the OpenStack Nova VNC Console Service (nova-novncproxy)
-May manage a nova-novncproxy instance or a clone set that 
+May manage a nova-novncproxy instance or a clone set that
 creates a distributed nova-novncproxy cluster.
 </longdesc>
 <shortdesc lang="en">Manages the OpenStack Nova VNC Console (nova-novncproxy)</shortdesc>

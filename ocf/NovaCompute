@@ -213,14 +213,14 @@ nova_start() {
 nova_stop() {
     pid=$(nova_pid)
     if [ "x$pid" != x ]; then
-	su nova -c "kill -TERM $pid" -s /bin/bash	
+	su nova -c "kill -TERM $pid" -s /bin/bash
     fi
 
     while [ "x$pid" != x ]; do
 	sleep 1
 	pid=$(nova_pid)
     done
-    
+
     return $OCF_SUCCESS
 }
 

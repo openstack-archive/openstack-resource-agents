@@ -151,7 +151,7 @@ update_evacuation() {
 
 handle_evacuations() {
     while [ $# -gt 0 ]; do
-	node=$1 
+	node=$1
 	state=$2
 	shift; shift;
 	need_evacuate=0
@@ -159,18 +159,18 @@ handle_evacuations() {
 	case $state in
 	    "") ;;
 	    no)  ocf_log debug "$node is either fine or already handled";;
-	    yes) need_evacuate=1;; 
+	    yes) need_evacuate=1;;
 	    *@*)
 		where=$(echo $state | awk -F@ '{print $1}')
 		when=$(echo $state | awk -F@ '{print $2}')
 		now=$(date +%s)
 
 		if [ $(($now - $when)) -gt 60 ]; then
-		    ocf_log info "Processing partial evacuation of $node by $where at $when"		
+		    ocf_log info "Processing partial evacuation of $node by $where at $when"
 		    need_evacuate=1
 		else
 		    # Give some time for any in-flight evacuations to either complete or fail
-		    # Nova won't react well if there are two overlapping requests 
+		    # Nova won't react well if there are two overlapping requests
 		    ocf_log info "Deferring processing partial evacuation of $node by $where at $when"
 		fi
 		;;
@@ -234,7 +234,7 @@ evacuate_validate() {
 
     check_binary fence_compute
 
-    # Is the state directory writable? 
+    # Is the state directory writable?
     state_dir=$(dirname $statefile)
     touch "$state_dir/$$"
     if [ $? != 0 ]; then

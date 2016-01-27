@@ -55,7 +55,7 @@ usage() {
     cat <<UEND
         usage: $0 (start|stop|validate-all|meta-data|status|monitor)
 
-        $0 manages an OpenStack ImageService (glance-registry) process as an HA resource 
+        $0 manages an OpenStack ImageService (glance-registry) process as an HA resource
 
         The 'start' operation starts the imaging service.
         The 'stop' operation stops the imaging service.
@@ -76,7 +76,7 @@ meta_data() {
 
 <longdesc lang="en">
 Resource agent for the OpenStack ImageService Service (glance-registry)
-May manage a glance-registry instance or a clone set that 
+May manage a glance-registry instance or a clone set that
 creates a distributed glance-registry cluster.
 </longdesc>
 <shortdesc lang="en">Manages the OpenStack ImageService (glance-registry)</shortdesc>
@@ -251,7 +251,7 @@ glance_registry_monitor() {
         token=`curl -s -d  "{\"auth\":{\"passwordCredentials\": {\"username\": \"$OCF_RESKEY_os_username\", \
           \"password\": \"$OCF_RESKEY_os_password\"}, \"tenantName\": \"$OCF_RESKEY_os_tenant_name\"}}" \
           -H "Content-type: application/json" $OCF_RESKEY_keystone_get_token_url | tr ',' '\n' | grep '"id":' \
-          | cut -d'"' -f4 | head --lines 1` 
+          | cut -d'"' -f4 | head --lines 1`
         http_code=`curl --write-out %{http_code} --output /dev/null -sH "X-Auth-Token: $token" $OCF_RESKEY_url`
         rc=$?
         if [ $rc -ne 0 ] || [ $http_code -ne 200 ]; then

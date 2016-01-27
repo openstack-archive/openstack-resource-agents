@@ -7,10 +7,10 @@ Copyright: 2012 hastexo Professional Services GmbH
 License: Apache
 
 Files: ocf/nova-api ocf/nova-cert ocf/nova-consoleauth ocf/nova-novnc ocf/nova-scheduler
-Copyright: 2012 Sebastien Han 
+Copyright: 2012 Sebastien Han
 License: Apache
 
-Files: ocf/quantum-server 
+Files: ocf/quantum-server
 Copyright: 2012 Emilien Macchi
 License: Apache
 
