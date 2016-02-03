@@ -168,6 +168,8 @@ nova_start() {
 	ocf_log info "Pausing to give evacuations from ${NOVA_HOST} time to complete"
 	sleep ${OCF_RESKEY_evacuation_delay}
 
+	fence_compute ${fence_options} -o on -n ${NOVA_HOST}
+	attrd_updater -p -n evacuate -N ${NOVA_HOST} -D
     else
 	ocf_log info "Waiting for pending evacuations from ${NOVA_HOST}"
 	while [ "x$state" != "xno" ]; do
@@ -177,6 +179,9 @@ nova_start() {
 
 	ocf_log info "Pausing to give evacuations from ${NOVA_HOST} time to complete"
 	sleep ${OCF_RESKEY_evacuation_delay}
+
+	fence_compute ${fence_options} -o on -n ${NOVA_HOST}
+	attrd_updater -p -n evacuate -N ${NOVA_HOST} -D
     fi
 
     export LIBGUESTFS_ATTACH_METHOD=appliance
@@ -188,24 +193,6 @@ nova_start() {
 	nova_monitor
 	rc=$?
     done
-
-##   TEMPORARY disable call to "service enable" that seems to create
-##   issues and it is unnecessary since fence_compute doesn't disable
-##   the service
-
-#    if [ "x${OCF_RESKEY_domain}" != x ]; then
-#	export service_host="${NOVA_HOST}.${OCF_RESKEY_domain}"
-#    else
-#	export service_host="${NOVA_HOST}"
-#    fi
-
-#    python -c "import os; from novaclient import client as nova_client; nova = nova_client.Client('2', os.environ.get('OCF_RESKEY_username'), os.environ.get('OCF_RESKEY_password'), os.environ.get('OCF_RESKEY_tenant_name'), os.environ.get('OCF_RESKEY_auth_url')); nova.services.enable(os.environ.get('service_host'), 'nova-compute');"
-
-#    rc=$?
-#    if [ $rc != 0 ]; then
-#	ocf_exit_reason "nova.services.enable failed $rc"
-#	exit $OCF_NOT_RUNNING
-#    fi
 
     return $OCF_SUCCESS
 }
