@@ -220,7 +220,7 @@ evacuate_monitor() {
     fi
 
     handle_evacuations $(
-        attrd_updater -n evacute -A |
+        attrd_updater -n evacuate -A |
             sed 's/ value=""/ value="no"/' |
             tr '="' '  ' |
             awk '{print $4" "$6}'
