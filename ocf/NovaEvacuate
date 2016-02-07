@@ -220,7 +220,8 @@ evacuate_monitor() {
     fi
 
     handle_evacuations $(
-        attrd_updater -n evacute -A |
+        attrd_updater -n evacute -A \
+            2> >(grep -v "attribute does not exist" 1>&2) |
             sed 's/ value=""/ value="no"/' |
             tr '="' '  ' |
             awk '{print $4" "$6}'
