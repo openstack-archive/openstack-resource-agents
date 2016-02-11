@@ -64,6 +64,7 @@ Authorization URL for connecting to keystone in admin context
 Username for connecting to keystone in admin context
 </longdesc>
 <shortdesc lang="en">Username</shortdesc>
+<content type="string" default="" />
 </parameter>
 
 <parameter name="password" unique="0" required="1">
