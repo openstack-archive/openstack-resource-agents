@@ -171,7 +171,7 @@ nova_start() {
 
     else
 	ocf_log info "Waiting for pending evacuations from ${NOVA_HOST}"
-	while [ "x$state" != "xno" ]; do
+	while [ "x$state" != "xno" -a "x$state" != x ]; do
 	    state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | sed -e 's/.*value=//' | tr -d '"' )
 	    sleep 5
 	done
