@@ -84,6 +84,14 @@ Note that with Keystone V3 tenant names are only unique within a domain.
 <content type="string" default="" />
 </parameter>
 
+<parameter name="domain" unique="0" required="0">
+<longdesc lang="en">
+DNS domain in which hosts live, useful when the cluster uses short names and nova uses FQDN
+</longdesc>
+<shortdesc lang="en">DNS domain</shortdesc>
+<content type="string" default="" />
+</parameter>
+
 <parameter name="endpoint_type" unique="0" required="0">
 <longdesc lang="en">
 Nova API location (internal, public or admin URL)
@@ -272,6 +280,10 @@ evacuate_validate() {
     fi
 
     fence_options="${fence_options} -t ${OCF_RESKEY_tenant_name}"
+
+    if [ -n "${OCF_RESKEY_domain}" ]; then
+	fence_options="${fence_options} -d ${OCF_RESKEY_domain}"
+    fi
 
     if [ -n "${OCF_RESKEY_no_shared_storage}" ]; then
 	if ocf_is_true "${OCF_RESKEY_no_shared_storage}"; then
