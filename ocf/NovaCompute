@@ -180,7 +180,7 @@ nova_start() {
 
     state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | sed -e 's/.*value=//' | tr -d '"' )
     if [ "x$state" = x ]; then
-	: never been fenced
+	: no fencing to recover
 
     elif [ "x$state" = xno ]; then
 	: has been evacuated, however it could have been 1s ago
