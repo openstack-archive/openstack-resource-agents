@@ -26,6 +26,3 @@ install:
 	for file in ocf/*; do \
 		$(INSTALL) -t $(DESTDIR)/usr/lib/ocf/resource.d/openstack -m 0755 $${file} ; \
 	done
-
-syntax-check:
-	utils/syntax_check.sh -a -p
