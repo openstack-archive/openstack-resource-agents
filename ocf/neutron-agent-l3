@@ -221,10 +221,10 @@ neutron_l3_agent_monitor() {
         # check the connections according to the PID
         network_amqp_check=`netstat -punt | grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$pid" | grep -qs "ESTABLISHED"`
         rc=$?
-	    if [ $rc -ne 0 ]; then
-	        ocf_log err "Neutron L3 Server is not connected to the Neutron server: $rc"
-	        return $OCF_NOT_RUNNING
-	    fi
+        if [ $rc -ne 0 ]; then
+            ocf_log err "Neutron L3 Server is not connected to the Neutron server: $rc"
+            return $OCF_NOT_RUNNING
+        fi
 
     ocf_log debug "OpenStack L3 Server (neutron-l3-agent) monitor succeeded"
     return $OCF_SUCCESS
@@ -244,7 +244,7 @@ neutron_l3_agent_start() {
     # straight to /dev/null anyway and using ocf_run would break stdout-redirection here.
     su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} --config-file=$OCF_RESKEY_config \
        --config-file=$OCF_RESKEY_plugin_config --log-file=/var/log/neutron/l3-agent.log $OCF_RESKEY_additional_parameters"' >> \
-	/dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
+       /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
 
     # Spin waiting for the server to come up.
     # Let the CRM/LRM time us out if required
