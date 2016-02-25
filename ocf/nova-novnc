@@ -213,7 +213,7 @@ nova_vnc_console_monitor() {
 
     # Check whether we are supposed to monitor by logging into nova-novncproxy
     # and do it if that's the case.
-	vnc_list_check=`netstat -a | grep -s "$OCF_RESKEY_console_port" | grep -qs "LISTEN"`
+    vnc_list_check=`netstat -a | grep -s "$OCF_RESKEY_console_port" | grep -qs "LISTEN"`
     rc=$?
     if [ $rc -ne 0 ]; then
         ocf_log err "Nova VNC Console doesn't seem to listen on his default port: $rc"
