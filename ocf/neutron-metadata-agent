@@ -294,7 +294,7 @@ neutron_metadata_agent_stop() {
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
         # SIGTERM didn't help either, try SIGKILL
         ocf_log info "OpenStack Neutron Metadata Agent (neutron-metadata-agent) failed to stop after ${shutdown_timeout}s \
-          using SIGTERM. Trying SIGKILL ..."
+            using SIGTERM. Trying SIGKILL ..."
         ocf_run kill -s KILL $pid
     fi
 
@@ -308,10 +308,14 @@ neutron_metadata_agent_stop() {
 #######################################################################
 
 case "$1" in
-  meta-data)    meta_data
-                exit $OCF_SUCCESS;;
-  usage|help)   usage
-                exit $OCF_SUCCESS;;
+    meta-data)
+        meta_data
+        exit $OCF_SUCCESS
+        ;;
+    usage|help)
+        usage
+        exit $OCF_SUCCESS
+        ;;
 esac
 
 # Anything except meta-data and help must pass validation
@@ -319,11 +323,22 @@ neutron_metadata_agent_validate || exit $?
 
 # What kind of method was invoked?
 case "$1" in
-  start)        neutron_metadata_agent_start;;
-  stop)         neutron_metadata_agent_stop;;
-  status)       neutron_metadata_agent_status;;
-  monitor)      neutron_metadata_agent_monitor;;
-  validate-all) ;;
-  *)            usage
-                exit $OCF_ERR_UNIMPLEMENTED;;
+    start)
+        neutron_metadata_agent_start
+        ;;
+    stop)
+        neutron_metadata_agent_stop
+        ;;
+    status)
+        neutron_metadata_agent_status
+        ;;
+    monitor)
+        neutron_metadata_agent_monitor
+        ;;
+    validate-all)
+        ;;
+    *)
+        usage
+        exit $OCF_ERR_UNIMPLEMENTED
+        ;;
 esac

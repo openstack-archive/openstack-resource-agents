@@ -249,9 +249,9 @@ glance_registry_monitor() {
     if [ -n "$OCF_RESKEY_os_username" ] && [ -n "$OCF_RESKEY_os_password" ] \
     && [ -n "$OCF_RESKEY_os_tenant_name" ] && [ -n "$OCF_RESKEY_keystone_get_token_url" ]; then
         token=`curl -s -d  "{\"auth\":{\"passwordCredentials\": {\"username\": \"$OCF_RESKEY_os_username\", \
-          \"password\": \"$OCF_RESKEY_os_password\"}, \"tenantName\": \"$OCF_RESKEY_os_tenant_name\"}}" \
-          -H "Content-type: application/json" $OCF_RESKEY_keystone_get_token_url | tr ',' '\n' | grep '"id":' \
-          | cut -d'"' -f4 | head --lines 1`
+            \"password\": \"$OCF_RESKEY_os_password\"}, \"tenantName\": \"$OCF_RESKEY_os_tenant_name\"}}" \
+            -H "Content-type: application/json" $OCF_RESKEY_keystone_get_token_url | tr ',' '\n' | grep '"id":' \
+            | cut -d'"' -f4 | head --lines 1`
         http_code=`curl --write-out %{http_code} --output /dev/null -sH "X-Auth-Token: $token" $OCF_RESKEY_url`
         rc=$?
         if [ $rc -ne 0 ] || [ $http_code -ne 200 ]; then
@@ -277,7 +277,7 @@ glance_registry_start() {
     # run the actual glance-registry daemon. Don't use ocf_run as we're sending the tool's output
     # straight to /dev/null anyway and using ocf_run would break stdout-redirection here.
     su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} --config-file $OCF_RESKEY_config \
-      $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
+        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
 
     # Spin waiting for the server to come up.
     # Let the CRM/LRM time us out if required
@@ -338,7 +338,7 @@ glance_registry_stop() {
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
         # SIGTERM didn't help either, try SIGKILL
         ocf_log info "OpenStack ImageService (glance-registry) failed to stop after ${shutdown_timeout}s \
-          using SIGTERM. Trying SIGKILL ..."
+            using SIGTERM. Trying SIGKILL ..."
         ocf_run kill -s KILL $pid
     fi
 
@@ -352,10 +352,14 @@ glance_registry_stop() {
 #######################################################################
 
 case "$1" in
-  meta-data)    meta_data
-                exit $OCF_SUCCESS;;
-  usage|help)   usage
-                exit $OCF_SUCCESS;;
+    meta-data)
+        meta_data
+        exit $OCF_SUCCESS
+        ;;
+    usage|help)
+        usage
+        exit $OCF_SUCCESS
+        ;;
 esac
 
 # Anything except meta-data and help must pass validation
@@ -363,11 +367,22 @@ glance_registry_validate || exit $?
 
 # What kind of method was invoked?
 case "$1" in
-  start)        glance_registry_start;;
-  stop)         glance_registry_stop;;
-  status)       glance_registry_status;;
-  monitor)      glance_registry_monitor;;
-  validate-all) ;;
-  *)            usage
-                exit $OCF_ERR_UNIMPLEMENTED;;
+    start)
+        glance_registry_start
+        ;;
+    stop)
+        glance_registry_stop
+        ;;
+    status)
+        glance_registry_status
+        ;;
+    monitor)
+        glance_registry_monitor
+        ;;
+    validate-all)
+        ;;
+    *)
+        usage
+        exit $OCF_ERR_UNIMPLEMENTED
+        ;;
 esac

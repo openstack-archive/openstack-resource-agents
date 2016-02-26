@@ -347,7 +347,7 @@ neutron_server_stop() {
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
         # SIGTERM didn't help either, try SIGKILL
         ocf_log info "OpenStack Neutron Server (neutron-server) failed to stop after ${shutdown_timeout}s \
-          using SIGTERM. Trying SIGKILL ..."
+            using SIGTERM. Trying SIGKILL ..."
         ocf_run kill -s KILL $pid
     fi
 
@@ -361,10 +361,14 @@ neutron_server_stop() {
 #######################################################################
 
 case "$1" in
-  meta-data)    meta_data
-                exit $OCF_SUCCESS;;
-  usage|help)   usage
-                exit $OCF_SUCCESS;;
+    meta-data)
+        meta_data
+        exit $OCF_SUCCESS
+        ;;
+    usage|help)
+        usage
+        exit $OCF_SUCCESS
+        ;;
 esac
 
 # Anything except meta-data and help must pass validation
@@ -372,11 +376,22 @@ neutron_server_validate || exit $?
 
 # What kind of method was invoked?
 case "$1" in
-  start)        neutron_server_start;;
-  stop)         neutron_server_stop;;
-  status)       neutron_server_status;;
-  monitor)      neutron_server_monitor;;
-  validate-all) ;;
-  *)            usage
-                exit $OCF_ERR_UNIMPLEMENTED;;
+    start)
+        neutron_server_start
+        ;;
+    stop)
+        neutron_server_stop
+        ;;
+    status)
+        neutron_server_status
+        ;;
+    monitor)
+        neutron_server_monitor
+        ;;
+    validate-all)
+        ;;
+    *)
+        usage
+        exit $OCF_ERR_UNIMPLEMENTED
+        ;;
 esac
