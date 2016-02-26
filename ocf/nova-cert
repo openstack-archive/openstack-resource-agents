@@ -250,26 +250,26 @@ nova_cert_monitor() {
 
     # Check the connections according to the PID.
     # We are sure to hit the cert process and not other nova process with the same connection behavior (for example nova-scheduler)
-	if ocf_is_true "$OCF_RESKEY_zeromq"; then
-	    pid=`cat $OCF_RESKEY_pid`
-		cert_db_check=`netstat -punt | grep -s "$OCF_RESKEY_database_server_port" | grep -s "$pid" | grep -qs "ESTABLISHED"`
-		rc_db=$?
-		if [ $rc_db -ne 0 ]; then
-		    ocf_log err "Nova Cert is not connected to the database server: $rc_db"
-		    return $OCF_NOT_RUNNING
-		fi
-	else
+    if ocf_is_true "$OCF_RESKEY_zeromq"; then
+        pid=`cat $OCF_RESKEY_pid`
+        cert_db_check=`netstat -punt | grep -s "$OCF_RESKEY_database_server_port" | grep -s "$pid" | grep -qs "ESTABLISHED"`
+        rc_db=$?
+        if [ $rc_db -ne 0 ]; then
+            ocf_log err "Nova Cert is not connected to the database server: $rc_db"
+            return $OCF_NOT_RUNNING
+        fi
+    else
         pid=`cat $OCF_RESKEY_pid`
         # check the connections according to the PID
         cert_db_check=`netstat -punt | grep -s "$OCF_RESKEY_database_server_port" | grep -s "$pid" | grep -sq "ESTABLISHED"`
         rc_db=$?
         cert_amqp_check=`netstat -punt | grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$pid" | grep -sq "ESTABLISHED"`
         rc_amqp=$?
-	    if [ $rc_amqp -ne 0 ] || [ $rc_db -ne 0 ]; then
-		    ocf_log err "Nova Cert is not connected to the AMQP server and/or the database server: AMQP connection test returned $rc_amqp and database connection test returned $rc_db"
-		    return $OCF_NOT_RUNNING
-		fi
-	fi
+        if [ $rc_amqp -ne 0 ] || [ $rc_db -ne 0 ]; then
+            ocf_log err "Nova Cert is not connected to the AMQP server and/or the database server: AMQP connection test returned $rc_amqp and database connection test returned $rc_db"
+            return $OCF_NOT_RUNNING
+        fi
+    fi
 
     ocf_log debug "OpenStack Nova Cert (nova-cert) monitor succeeded"
     return $OCF_SUCCESS
