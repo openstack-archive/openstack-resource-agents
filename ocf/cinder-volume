@@ -215,26 +215,26 @@ cinder_volume_monitor() {
     pid=`cat $OCF_RESKEY_pid`
 
     if ocf_is_true "$OCF_RESKEY_multibackend"; then
-      # Grab the child's PIDs
-      for i in `ps -o pid --no-headers --ppid $pid`
-      do
-        volume_amqp_check=`netstat -punt | grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$i" | grep -qs "ESTABLISHED"`
+        # Grab the child's PIDs
+        for i in `ps -o pid --no-headers --ppid $pid`
+        do
+            volume_amqp_check=`netstat -punt | grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$i" | grep -qs "ESTABLISHED"`
+            rc=$?
+            if [ $rc -ne 0 ]; then
+                ocf_log err "This child process from Cinder Volume is not connected to the AMQP server: $rc"
+                return $OCF_NOT_RUNNING
+            fi
+        done
+    else
+        # Check the connections according to the PID
+        # We are sure to hit the scheduler process and not other nova process with the same connection behavior (for example nova-cert)
+        # check the connections according to the PID
+        volume_amqp_check=`netstat -punt | grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$pid" | grep -qs "ESTABLISHED"`
         rc=$?
         if [ $rc -ne 0 ]; then
-          ocf_log err "This child process from Cinder Volume is not connected to the AMQP server: $rc"
-          return $OCF_NOT_RUNNING
+            ocf_log err "Cinder Volume is not connected to the AMQP server: $rc"
+            return $OCF_NOT_RUNNING
         fi
-      done
-    else
-      # Check the connections according to the PID
-      # We are sure to hit the scheduler process and not other nova process with the same connection behavior (for example nova-cert)
-      # check the connections according to the PID
-      volume_amqp_check=`netstat -punt | grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$pid" | grep -qs "ESTABLISHED"`
-      rc=$?
-      if [ $rc -ne 0 ]; then
-          ocf_log err "Cinder Volume is not connected to the AMQP server: $rc"
-          return $OCF_NOT_RUNNING
-      fi
     fi
 
     ocf_log debug "OpenStack Cinder Volume (cinder-volume) monitor succeeded"
@@ -254,7 +254,7 @@ cinder_volume_start() {
     # run the actual cinder-volume daemon. Don't use ocf_run as we're sending the tool's output
     # straight to /dev/null anyway and using ocf_run would break stdout-redirection here.
     su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} --config-file=$OCF_RESKEY_config \
-       $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
+        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
 
     # Spin waiting for the server to come up.
     # Let the CRM/LRM time us out if required
@@ -315,7 +315,7 @@ cinder_volume_stop() {
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
         # SIGTERM didn't help either, try SIGKILL
         ocf_log info "OpenStack Cinder Volume (cinder-volume) failed to stop after ${shutdown_timeout}s \
-          using SIGTERM. Trying SIGKILL ..."
+            using SIGTERM. Trying SIGKILL ..."
         ocf_run kill -s KILL $pid
     fi
 
@@ -329,10 +329,14 @@ cinder_volume_stop() {
 #######################################################################
 
 case "$1" in
-  meta-data)    meta_data
-                exit $OCF_SUCCESS;;
-  usage|help)   usage
-                exit $OCF_SUCCESS;;
+    meta-data)
+        meta_data
+        exit $OCF_SUCCESS
+        ;;
+    usage|help)
+        usage
+        exit $OCF_SUCCESS
+        ;;
 esac
 
 # Anything except meta-data and help must pass validation
@@ -340,11 +344,22 @@ cinder_volume_validate || exit $?
 
 # What kind of method was invoked?
 case "$1" in
-  start)        cinder_volume_start;;
-  stop)         cinder_volume_stop;;
-  status)       cinder_volume_status;;
-  monitor)      cinder_volume_monitor;;
-  validate-all) ;;
-  *)            usage
-                exit $OCF_ERR_UNIMPLEMENTED;;
+    start)
+        cinder_volume_start
+        ;;
+    stop)
+        cinder_volume_stop
+        ;;
+    status)
+        cinder_volume_status
+        ;;
+    monitor)
+        cinder_volume_monitor
+        ;;
+    validate-all)
+        ;;
+    *)
+        usage
+        exit $OCF_ERR_UNIMPLEMENTED
+        ;;
 esac

@@ -237,7 +237,7 @@ nova_vnc_console_start() {
     # run the actual nova-novncproxy daemon. Don't use ocf_run as we're sending the tool's output
     # straight to /dev/null anyway and using ocf_run would break stdout-redirection here.
     su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} --config-file=$OCF_RESKEY_config --web /usr/share/novnc/ \
-       $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
+        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
 
     # Spin waiting for the server to come up.
     # Let the CRM/LRM time us out if required
@@ -298,7 +298,7 @@ nova_vnc_console_stop() {
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
         # SIGTERM didn't help either, try SIGKILL
         ocf_log info "OpenStack Nova VNC Console (nova-novncproxy) failed to stop after ${shutdown_timeout}s \
-          using SIGTERM. Trying SIGKILL ..."
+            using SIGTERM. Trying SIGKILL ..."
         ocf_run kill -s KILL $pid
     fi
 
@@ -312,10 +312,14 @@ nova_vnc_console_stop() {
 #######################################################################
 
 case "$1" in
-  meta-data)    meta_data
-                exit $OCF_SUCCESS;;
-  usage|help)   usage
-                exit $OCF_SUCCESS;;
+    meta-data)
+        meta_data
+        exit $OCF_SUCCESS
+        ;;
+    usage|help)
+        usage
+        exit $OCF_SUCCESS
+        ;;
 esac
 
 # Anything except meta-data and help must pass validation
@@ -323,12 +327,23 @@ nova_vnc_console_validate || exit $?
 
 # What kind of method was invoked?
 case "$1" in
-  start)        nova_vnc_console_start;;
-  stop)         nova_vnc_console_stop;;
-  status)       nova_vnc_console_status;;
-  monitor)      nova_vnc_console_monitor;;
-  validate-all) ;;
-  *)            usage
-                exit $OCF_ERR_UNIMPLEMENTED;;
+    start)
+        nova_vnc_console_start
+        ;;
+    stop)
+        nova_vnc_console_stop
+        ;;
+    status)
+        nova_vnc_console_status
+        ;;
+    monitor)
+        nova_vnc_console_monitor
+        ;;
+    validate-all)
+        ;;
+    *)
+        usage
+        exit $OCF_ERR_UNIMPLEMENTED
+        ;;
 esac
 

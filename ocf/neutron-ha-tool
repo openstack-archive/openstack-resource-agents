@@ -230,10 +230,14 @@ neutron_ha_tool_stop() {
 #######################################################################
 
 case "$1" in
-  meta-data)    meta_data
-                exit $OCF_SUCCESS;;
-  usage|help)   usage
-                exit $OCF_SUCCESS;;
+    meta-data)
+        meta_data
+        exit $OCF_SUCCESS
+        ;;
+    usage|help)
+        usage
+        exit $OCF_SUCCESS
+        ;;
 esac
 
 # Anything except meta-data and help must pass validation
@@ -250,11 +254,22 @@ fi
 
 # What kind of method was invoked?
 case "$1" in
-  start)        neutron_ha_tool_start;;
-  stop)         neutron_ha_tool_stop;;
-  status)       neutron_ha_tool_status;;
-  monitor)      neutron_ha_tool_monitor;;
-  validate-all) ;;
-  *)            usage
-                exit $OCF_ERR_UNIMPLEMENTED;;
+    start)
+        neutron_ha_tool_start
+        ;;
+    stop)
+        neutron_ha_tool_stop
+        ;;
+    status)
+        neutron_ha_tool_status
+        ;;
+    monitor)
+        neutron_ha_tool_monitor
+        ;;
+    validate-all)
+        ;;
+    *)
+        usage
+        exit $OCF_ERR_UNIMPLEMENTED
+        ;;
 esac
