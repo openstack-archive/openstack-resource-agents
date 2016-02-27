@@ -216,8 +216,7 @@ cinder_volume_monitor() {
 
     if ocf_is_true "$OCF_RESKEY_multibackend"; then
         # Grab the child's PIDs
-        for i in `ps -o pid --no-headers --ppid $pid`
-        do
+        for i in `ps -o pid --no-headers --ppid $pid`; do
             volume_amqp_check=`netstat -punt | grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$i" | grep -qs "ESTABLISHED"`
             rc=$?
             if [ $rc -ne 0 ]; then
