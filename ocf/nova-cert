@@ -3,10 +3,12 @@
 #
 # OpenStack Nova Cert (nova-cert)
 #
-# Description:  Manages an OpenStack Nova Cert (nova-cert) process as an HA resource
+# Description:  Manages an OpenStack Nova Cert (nova-cert) process as an HA
+#               resource
 #
 # Authors:      Sébastien Han
-# Mainly inspired by the Glance API resource agent written by Martin Gerhard Loschwitz from Hastexo: http://goo.gl/whLpr
+# Mainly inspired by the Glance API resource agent written by Martin Gerhard
+# Loschwitz from Hastexo: http://goo.gl/whLpr
 #
 # Support:      openstack@lists.launchpad.net
 # License:      Apache Software License (ASL) 2.0
@@ -227,7 +229,8 @@ nova_cert_status() {
     if [ $rc -eq 0 ]; then
         return $OCF_SUCCESS
     else
-        ocf_log info "Old PID file found, but OpenStack Nova Cert (nova-cert) is not running"
+        ocf_log info "Old PID file found, but OpenStack Nova Cert (nova-cert) \
+            is not running"
         return $OCF_NOT_RUNNING
     fi
 }
@@ -249,24 +252,34 @@ nova_cert_monitor() {
     fi
 
     # Check the connections according to the PID.
-    # We are sure to hit the cert process and not other nova process with the same connection behavior (for example nova-scheduler)
+    # We are sure to hit the cert process and not other nova process with the
+    # same connection behavior (for example nova-scheduler)
     if ocf_is_true "$OCF_RESKEY_zeromq"; then
         pid=`cat $OCF_RESKEY_pid`
-        cert_db_check=`netstat -punt | grep -s "$OCF_RESKEY_database_server_port" | grep -s "$pid" | grep -qs "ESTABLISHED"`
+        cert_db_check=`netstat -punt | \
+            grep -s "$OCF_RESKEY_database_server_port" | grep -s "$pid" | \
+            grep -qs "ESTABLISHED"`
         rc_db=$?
         if [ $rc_db -ne 0 ]; then
-            ocf_log err "Nova Cert is not connected to the database server: $rc_db"
+            ocf_log err "Nova Cert is not connected to the database server: \
+                $rc_db"
             return $OCF_NOT_RUNNING
         fi
     else
         pid=`cat $OCF_RESKEY_pid`
         # check the connections according to the PID
-        cert_db_check=`netstat -punt | grep -s "$OCF_RESKEY_database_server_port" | grep -s "$pid" | grep -sq "ESTABLISHED"`
+        cert_db_check=`netstat -punt | \
+            grep -s "$OCF_RESKEY_database_server_port" | grep -s "$pid" | \
+            grep -sq "ESTABLISHED"`
         rc_db=$?
-        cert_amqp_check=`netstat -punt | grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$pid" | grep -sq "ESTABLISHED"`
+        cert_amqp_check=`netstat -punt | \
+            grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$pid" | \
+            grep -sq "ESTABLISHED"`
         rc_amqp=$?
         if [ $rc_amqp -ne 0 ] || [ $rc_db -ne 0 ]; then
-            ocf_log err "Nova Cert is not connected to the AMQP server and/or the database server: AMQP connection test returned $rc_amqp and database connection test returned $rc_db"
+            ocf_log err "Nova Cert is not connected to the AMQP server and/or \
+                the database server: AMQP connection test returned $rc_amqp \
+                and database connection test returned $rc_db"
             return $OCF_NOT_RUNNING
         fi
     fi
@@ -285,10 +298,13 @@ nova_cert_start() {
         return $OCF_SUCCESS
     fi
 
-    # run the actual nova-cert daemon. Don't use ocf_run as we're sending the tool's output
-    # straight to /dev/null anyway and using ocf_run would break stdout-redirection here.
-    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} --config-file=$OCF_RESKEY_config \
-        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
+    # run the actual nova-cert daemon. Don't use ocf_run as we're sending the
+    # tool's output straight to /dev/null anyway and using ocf_run would break
+    # stdout-redirection here.
+    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} \
+        --config-file=$OCF_RESKEY_config \
+        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' \
+        > $OCF_RESKEY_pid
 
     # Spin waiting for the server to come up.
     # Let the CRM/LRM time us out if required
@@ -341,15 +357,16 @@ nova_cert_stop() {
         fi
         count=`expr $count + 1`
         sleep 1
-        ocf_log debug "OpenStack Nova Cert (nova-cert) still hasn't stopped yet. Waiting ..."
+        ocf_log debug "OpenStack Nova Cert (nova-cert) still hasn't stopped \
+            yet. Waiting ..."
     done
 
     nova_cert_status
     rc=$?
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
         # SIGTERM didn't help either, try SIGKILL
-        ocf_log info "OpenStack Nova Cert (nova-cert) failed to stop after ${shutdown_timeout}s \
-            using SIGTERM. Trying SIGKILL ..."
+        ocf_log info "OpenStack Nova Cert (nova-cert) failed to stop after \
+            ${shutdown_timeout}s using SIGTERM. Trying SIGKILL ..."
         ocf_run kill -s KILL $pid
     fi
 

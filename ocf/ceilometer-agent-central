@@ -3,7 +3,8 @@
 #
 # OpenStack Ceilometer Central Agent Service (ceilometer-agent-central)
 #
-# Description: Manages an OpenStack Ceilometer Central Agent Service (ceilometer-agent-central) process as an HA resource
+# Description: Manages an OpenStack Ceilometer Central Agent Service
+#              (ceilometer-agent-central) process as an HA resource
 #
 # Authors: Emilien Macchi
 # Mainly inspired by the Nova Scheduler resource agent written by Sebastien Han
@@ -194,7 +195,8 @@ ceilometer_agent_central_status() {
     local rc
 
     if [ ! -f $OCF_RESKEY_pid ]; then
-        ocf_log info "OpenStack Ceilometer Central Agent (ceilometer-agent-central) is not running"
+        ocf_log info "OpenStack Ceilometer Central Agent \
+            (ceilometer-agent-central) is not running"
         return $OCF_NOT_RUNNING
     else
         pid=`cat $OCF_RESKEY_pid`
@@ -205,7 +207,8 @@ ceilometer_agent_central_status() {
     if [ $rc -eq 0 ]; then
         return $OCF_SUCCESS
     else
-        ocf_log info "Old PID file found, but OpenStack Ceilometer Central Agent (ceilometer-agent-central) is not running"
+        ocf_log info "Old PID file found, but OpenStack Ceilometer Central \
+            Agent (ceilometer-agent-central) is not running"
         return $OCF_NOT_RUNNING
     fi
 }
@@ -224,16 +227,20 @@ ceilometer_agent_central_monitor() {
     fi
 
     # Check the connections according to the PID.
-    # We are sure to hit the scheduler process and not other Cinder process with the same connection behavior (for example cinder-api)
+    # We are sure to hit the scheduler process and not other Cinder process
+    # with the same connection behavior (for example cinder-api)
         pid=`cat $OCF_RESKEY_pid`
-        scheduler_amqp_check=`netstat -punt | grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$pid" | grep -qs "ESTABLISHED"`
+        scheduler_amqp_check=`netstat -punt | \
+            grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$pid" | \
+            grep -qs "ESTABLISHED"`
         rc=$?
         if [ $rc -ne 0 ]; then
         ocf_log err "Central Agent is not connected to the AMQP server : $rc"
         return $OCF_NOT_RUNNING
         fi
 
-    ocf_log debug "OpenStack Ceilometer Central Agent (ceilometer-agent-central) monitor succeeded"
+    ocf_log debug "OpenStack Ceilometer Central Agent \
+        (ceilometer-agent-central) monitor succeeded"
     return $OCF_SUCCESS
 }
 
@@ -243,14 +250,18 @@ ceilometer_agent_central_start() {
     ceilometer_agent_central_status
     rc=$?
     if [ $rc -eq $OCF_SUCCESS ]; then
-        ocf_log info "OpenStack Ceilometer Central Agent (ceilometer-agent-central) already running"
+        ocf_log info "OpenStack Ceilometer Central Agent \
+            (ceilometer-agent-central) already running"
         return $OCF_SUCCESS
     fi
 
-    # run the actual ceilometer-agent-central daemon. Don't use ocf_run as we're sending the tool's output
-    # straight to /dev/null anyway and using ocf_run would break stdout-redirection here.
-    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} --config-file=$OCF_RESKEY_config \
-        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
+    # run the actual ceilometer-agent-central daemon. Don't use ocf_run as
+    # we're sending the tool's output straight to /dev/null anyway and using
+    # ocf_run would break stdout-redirection here.
+    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} \
+        --config-file=$OCF_RESKEY_config \
+        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' \
+        > $OCF_RESKEY_pid
 
     # Spin waiting for the server to come up.
     while true; do
@@ -258,13 +269,15 @@ ceilometer_agent_central_start() {
     rc=$?
     [ $rc -eq $OCF_SUCCESS ] && break
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
-        ocf_log err "OpenStack Ceilometer Central Agent (ceilometer-agent-central) start failed"
+        ocf_log err "OpenStack Ceilometer Central Agent \
+            (ceilometer-agent-central) start failed"
         exit $OCF_ERR_GENERIC
     fi
     sleep 1
     done
 
-    ocf_log info "OpenStack Ceilometer Central Agent (ceilometer-agent-central) started"
+    ocf_log info "OpenStack Ceilometer Central Agent \
+        (ceilometer-agent-central) started"
     return $OCF_SUCCESS
 }
 
@@ -275,7 +288,8 @@ ceilometer_agent_central_stop() {
     ceilometer_agent_central_status
     rc=$?
     if [ $rc -eq $OCF_NOT_RUNNING ]; then
-        ocf_log info "OpenStack Ceilometer Central Agent (ceilometer-agent-central) already stopped"
+        ocf_log info "OpenStack Ceilometer Central Agent \
+            (ceilometer-agent-central) already stopped"
         return $OCF_SUCCESS
     fi
 
@@ -284,7 +298,8 @@ ceilometer_agent_central_stop() {
     ocf_run kill -s TERM $pid
     rc=$?
     if [ $rc -ne 0 ]; then
-        ocf_log err "OpenStack Ceilometer Central Agent (ceilometer-agent-central) couldn't be stopped"
+        ocf_log err "OpenStack Ceilometer Central Agent \
+            (ceilometer-agent-central) couldn't be stopped"
         exit $OCF_ERR_GENERIC
     fi
 
@@ -302,19 +317,22 @@ ceilometer_agent_central_stop() {
         fi
         count=`expr $count + 1`
         sleep 1
-        ocf_log debug "OpenStack Ceilometer Central Agent (ceilometer-agent-central) still hasn't stopped yet. Waiting ..."
+        ocf_log debug "OpenStack Ceilometer Central Agent \
+            (ceilometer-agent-central) still hasn't stopped yet. Waiting ..."
     done
 
     ceilometer_agent_central_status
     rc=$?
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
         # SIGTERM didn't help either, try SIGKILL
-        ocf_log info "OpenStack Ceilometer Central Agent (ceilometer-agent-central) failed to stop after ${shutdown_timeout}s \
-            using SIGTERM. Trying SIGKILL ..."
+        ocf_log info "OpenStack Ceilometer Central Agent \
+            (ceilometer-agent-central) failed to stop after \
+            ${shutdown_timeout}s using SIGTERM. Trying SIGKILL ..."
         ocf_run kill -s KILL $pid
     fi
 
-    ocf_log info "OpenStack Ceilometer Central Agent (ceilometer-agent-central) stopped"
+    ocf_log info "OpenStack Ceilometer Central Agent \
+        (ceilometer-agent-central) stopped"
 
     rm -f $OCF_RESKEY_pid
 
