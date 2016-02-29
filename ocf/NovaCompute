@@ -178,13 +178,15 @@ nova_start() {
         return $OCF_SUCCESS
     fi
 
-    state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | sed -e 's/.*value=//' | tr -d '"' )
+    state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | \
+        sed -e 's/.*value=//' | tr -d '"' )
     if [ "x$state" = x ]; then
         : no fencing to recover
 
     elif [ "x$state" = xno ]; then
         : has been evacuated, however it could have been 1s ago
-        ocf_log info "Pausing to give evacuations from ${NOVA_HOST} time to complete"
+        ocf_log info "Pausing to give evacuations from ${NOVA_HOST} time to \
+complete"
         sleep ${OCF_RESKEY_evacuation_delay}
 
         fence_compute ${fence_options} -o on -n ${NOVA_HOST}
@@ -192,11 +194,13 @@ nova_start() {
     else
         ocf_log info "Waiting for pending evacuations from ${NOVA_HOST}"
         while [ "x$state" != "xno" -a "x$state" != x ]; do
-            state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | sed -e 's/.*value=//' | tr -d '"' )
+            state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | \
+                sed -e 's/.*value=//' | tr -d '"' )
             sleep 5
         done
 
-        ocf_log info "Pausing to give evacuations from ${NOVA_HOST} time to complete"
+        ocf_log info "Pausing to give evacuations from ${NOVA_HOST} time to \
+complete"
         sleep ${OCF_RESKEY_evacuation_delay}
 
         fence_compute ${fence_options} -o on -n ${NOVA_HOST}
@@ -297,7 +301,8 @@ nova_validate() {
     fi
 
     if [ -n "${OCF_RESKEY_region_name}" ]; then
-        fence_options="${fence_options} --region-name ${OCF_RESKEY_region_name}"
+        fence_options="${fence_options} \
+            --region-name ${OCF_RESKEY_region_name}"
     fi
 
     if [ -n "${OCF_RESKEY_insecure}" ]; then
@@ -317,7 +322,8 @@ nova_validate() {
             adminURL|publicURL|internalURL)
                 ;;
             *)
-                ocf_exit_reason "endpoint_type ${OCF_RESKEY_endpoint_type} not valid. Use adminURL or publicURL or internalURL"
+                ocf_exit_reason "endpoint_type ${OCF_RESKEY_endpoint_type} \
+                    not valid. Use adminURL or publicURL or internalURL"
                 exit $OCF_ERR_CONFIGURED
                 ;;
         esac
@@ -342,12 +348,14 @@ nova_validate() {
         if [ "x${OCF_RESKEY_domain}" != x ]; then
             short_host=$(uname -n | awk -F. '{print $1}')
             if [ "x$NOVA_HOST" != "x${short_host}" ]; then
-                ocf_exit_reason "Invalid Nova host name, must be ${short_host} in order for instance recovery to function"
+                ocf_exit_reason "Invalid Nova host name, must be \
+                    ${short_host} in order for instance recovery to function"
                 rc=$OCF_ERR_CONFIGURED
             fi
 
         elif [ "x$NOVA_HOST" != "x$(uname -n)" ]; then
-            ocf_exit_reason "Invalid Nova host name, must be $(uname -n) in order for instance recovery to function"
+            ocf_exit_reason "Invalid Nova host name, must be $(uname -n) in \
+                order for instance recovery to function"
             rc=$OCF_ERR_CONFIGURED
         fi
     fi

@@ -197,12 +197,15 @@ handle_evacuations() {
                 now=$(date +%s)
 
                 if [ $(($now - $when)) -gt 60 ]; then
-                    ocf_log info "Processing partial evacuation of $node by $where at $when"
+                    ocf_log info "Processing partial evacuation of $node by \
+$where at $when"
                     need_evacuate=1
                 else
-                    # Give some time for any in-flight evacuations to either complete or fail
-                    # Nova won't react well if there are two overlapping requests
-                    ocf_log info "Deferring processing partial evacuation of $node by $where at $when"
+                    # Give some time for any in-flight evacuations to either
+                    # complete or fail Nova won't react well if there are two
+                    # overlapping requests
+                    ocf_log info "Deferring processing partial evacuation of \
+$node by $where at $when"
                 fi
                 ;;
         esac
@@ -211,7 +214,8 @@ handle_evacuations() {
             found=0
             ocf_log notice "Initiating evacuation of $node"
 
-            for known in $(fence_compute ${fence_options} -o list | tr -d ','); do
+            for known in $(fence_compute ${fence_options} -o list | \
+                tr -d ','); do
                 if [ ${known} = ${node} ]; then
                     found=1
                     break
@@ -308,7 +312,8 @@ evacuate_validate() {
     fi
 
     if [ -n "${OCF_RESKEY_region_name}" ]; then
-        fence_options="${fence_options} --region-name ${OCF_RESKEY_region_name}"
+        fence_options="${fence_options} \
+            --region-name ${OCF_RESKEY_region_name}"
     fi
 
     if [ -n "${OCF_RESKEY_insecure}" ]; then
@@ -328,7 +333,8 @@ evacuate_validate() {
             adminURL|publicURL|internalURL)
                 ;;
             *)
-                ocf_exit_reason "endpoint_type ${OCF_RESKEY_endpoint_type} not valid. Use adminURL or publicURL or internalURL"
+                ocf_exit_reason "endpoint_type ${OCF_RESKEY_endpoint_type} \
+                    not valid. Use adminURL or publicURL or internalURL"
                 exit $OCF_ERR_CONFIGURED
                 ;;
         esac
