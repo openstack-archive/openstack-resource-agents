@@ -3,10 +3,12 @@
 #
 # OpenStack L3 Service (neutron-l3-agent)
 #
-# Description:  Manages an OpenStack L3 Service (neutron-l3-agent) process as an HA resource
+# Description:  Manages an OpenStack L3 Service (neutron-l3-agent) process as
+#               an HA resource
 #
 # Authors: Emilien Macchi
-# Mainly inspired by the Nova Network resource agent written by Emilien Macchi & Sebastien Han
+# Mainly inspired by the Nova Network resource agent written by Emilien Macchi
+# & Sebastien Han
 #
 # Support:      openstack@lists.launchpad.net
 # License:      Apache Software License (ASL) 2.0
@@ -197,7 +199,8 @@ neutron_l3_agent_status() {
     if [ $rc -eq 0 ]; then
         return $OCF_SUCCESS
     else
-        ocf_log info "Old PID file found, but OpenStack L3 Server (neutron-l3-agent) is not running"
+        ocf_log info "Old PID file found, but OpenStack L3 Server" \
+            "(neutron-l3-agent) is not running"
         return $OCF_NOT_RUNNING
     fi
 }
@@ -216,13 +219,17 @@ neutron_l3_agent_monitor() {
     fi
 
     # Check the connections according to the PID.
-    # We are sure to hit the scheduler process and not other Neutron process with the same connection behavior (for example neutron-server)
+    # We are sure to hit the scheduler process and not other Neutron process
+    # with the same connection behavior (for example neutron-server)
         pid=`cat $OCF_RESKEY_pid`
         # check the connections according to the PID
-        network_amqp_check=`netstat -punt | grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$pid" | grep -qs "ESTABLISHED"`
+        network_amqp_check=`netstat -punt | \
+            grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$pid" | \
+            grep -qs "ESTABLISHED"`
         rc=$?
         if [ $rc -ne 0 ]; then
-            ocf_log err "Neutron L3 Server is not connected to the Neutron server: $rc"
+            ocf_log err "Neutron L3 Server is not connected to the Neutron" \
+                "server: $rc"
             return $OCF_NOT_RUNNING
         fi
 
@@ -240,11 +247,15 @@ neutron_l3_agent_start() {
         return $OCF_SUCCESS
     fi
 
-    # run the actual neutron-l3-agent daemon. Don't use ocf_run as we're sending the tool's output
-    # straight to /dev/null anyway and using ocf_run would break stdout-redirection here.
-    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} --config-file=$OCF_RESKEY_config \
-        --config-file=$OCF_RESKEY_plugin_config --log-file=/var/log/neutron/l3-agent.log $OCF_RESKEY_additional_parameters"' >> \
-        /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
+    # run the actual neutron-l3-agent daemon. Don't use ocf_run as we're
+    # sending the tool's output straight to /dev/null anyway and using ocf_run
+    # would break stdout-redirection here.
+    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} \
+        --config-file=$OCF_RESKEY_config \
+        --config-file=$OCF_RESKEY_plugin_config \
+        --log-file=/var/log/neutron/l3-agent.log \
+        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' \
+        > $OCF_RESKEY_pid
 
     # Spin waiting for the server to come up.
     # Let the CRM/LRM time us out if required
@@ -279,7 +290,8 @@ neutron_l3_agent_stop() {
     ocf_run kill -s TERM $pid
     rc=$?
     if [ $rc -ne 0 ]; then
-        ocf_log err "OpenStack L3 Server (neutron-l3-agent) couldn't be stopped"
+        ocf_log err "OpenStack L3 Server (neutron-l3-agent) couldn't be" \
+            "stopped"
         exit $OCF_ERR_GENERIC
     fi
 
@@ -297,15 +309,16 @@ neutron_l3_agent_stop() {
         fi
         count=`expr $count + 1`
         sleep 1
-        ocf_log debug "OpenStack L3 Server (neutron-l3-agent) still hasn't stopped yet. Waiting ..."
+        ocf_log debug "OpenStack L3 Server (neutron-l3-agent) still hasn't" \
+            "stopped yet. Waiting ..."
     done
 
     neutron_l3_agent_status
     rc=$?
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
         # SIGTERM didn't help either, try SIGKILL
-        ocf_log info "OpenStack L3 Server (neutron-l3-agent) failed to stop after ${shutdown_timeout}s \
-            using SIGTERM. Trying SIGKILL ..."
+        ocf_log info "OpenStack L3 Server (neutron-l3-agent) failed to stop" \
+            "after ${shutdown_timeout}s using SIGTERM. Trying SIGKILL ..."
         ocf_run kill -s KILL $pid
     fi
 

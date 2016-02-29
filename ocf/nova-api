@@ -3,10 +3,12 @@
 #
 # OpenStack NovaAPI (nova-api)
 #
-# Description:  Manages an OpenStack Nova API (nova-api) process as an HA resource
+# Description:  Manages an OpenStack Nova API (nova-api) process as an HA
+#               resource
 #
 # Authors:      Sébastien Han
-# Mainly inspired by the Glance API resource agent written by Martin Gerhard Loschwitz from Hastexo: http://goo.gl/whLpr
+# Mainly inspired by the Glance API resource agent written by Martin Gerhard
+# Loschwitz from Hastexo: http://goo.gl/whLpr
 #
 # Support:      openstack@lists.launchpad.net
 # License:      Apache Software License (ASL) 2.0
@@ -39,14 +41,14 @@ OCF_RESKEY_config_default="/etc/nova/nova.conf"
 OCF_RESKEY_user_default="nova"
 OCF_RESKEY_pid_default="$HA_RSCTMP/$OCF_RESOURCE_INSTANCE.pid"
 OCF_RESKEY_url_default="http://127.0.0.1:8774/v2/"
-OCF_RESKEY_keystone_get_token_url_default="http://127.0.0.1:5000/v2.0/tokens"
+OCF_RESKEY_keystone_get_token_url_def="http://127.0.0.1:5000/v2.0/tokens"
 
 : ${OCF_RESKEY_binary=${OCF_RESKEY_binary_default}}
 : ${OCF_RESKEY_config=${OCF_RESKEY_config_default}}
 : ${OCF_RESKEY_user=${OCF_RESKEY_user_default}}
 : ${OCF_RESKEY_pid=${OCF_RESKEY_pid_default}}
 : ${OCF_RESKEY_url=${OCF_RESKEY_url_default}}
-: ${OCF_RESKEY_keystone_get_token_url=${OCF_RESKEY_keystone_get_token_url_default}}
+: ${OCF_RESKEY_keystone_get_token_url=${OCF_RESKEY_keystone_get_token_url_def}}
 
 #######################################################################
 
@@ -127,7 +129,7 @@ The default URL to use to acquire a Nova API (nova-api) token for monitoring thi
 of OpenStack Nova API (nova-api)
 </longdesc>
 <shortdesc lang="en">OpenStack Nova API (nova-api) url</shortdesc>
-<content type="string" default="${OCF_RESKEY_keystone_get_token_url_default}" />
+<content type="string" default="${OCF_RESKEY_keystone_get_token_url_def}" />
 </parameter>
 
 <parameter name="os_username" unique="0" required="0">
@@ -225,7 +227,8 @@ nova_api_status() {
     if [ $rc -eq 0 ]; then
         return $OCF_SUCCESS
     else
-        ocf_log info "Old PID file found, but OpenStack Nova API (nova-api) is not running"
+        ocf_log info "Old PID file found, but OpenStack Nova API (nova-api)" \
+            "is not running"
         return $OCF_NOT_RUNNING
     fi
 }
@@ -245,15 +248,21 @@ nova_api_monitor() {
 
     # Check detailed information about this specific version of the API.
     if [ -n "$OCF_RESKEY_os_username" ] && [ -n "$OCF_RESKEY_os_password" ] \
-    && [ -n "$OCF_RESKEY_os_tenant_name" ] && [ -n "$OCF_RESKEY_keystone_get_token_url" ]; then
-        token=`curl -s -d  "{\"auth\":{\"passwordCredentials\": {\"username\": \"$OCF_RESKEY_os_username\", \
-            \"password\": \"$OCF_RESKEY_os_password\"}, \"tenantName\": \"$OCF_RESKEY_os_tenant_name\"}}" \
-            -H "Content-type: application/json" $OCF_RESKEY_keystone_get_token_url | tr ',' '\n' | grep '"id":' \
-            | cut -d'"' -f4 | head --lines 1`
-        http_code=`curl --write-out %{http_code} --output /dev/null -sH "X-Auth-Token: $token" $OCF_RESKEY_url`
+        && [ -n "$OCF_RESKEY_os_tenant_name" ] \
+        && [ -n "$OCF_RESKEY_keystone_get_token_url" ]; then
+        token=`curl -s -d  "{\"auth\":{\"passwordCredentials\": \
+            {\"username\": \"$OCF_RESKEY_os_username\", \
+            \"password\": \"$OCF_RESKEY_os_password\"}, \
+            \"tenantName\": \"$OCF_RESKEY_os_tenant_name\"}}" \
+            -H "Content-type: application/json" \
+            $OCF_RESKEY_keystone_get_token_url | \
+            tr ',' '\n' | grep '"id":' \ | cut -d'"' -f4 | head --lines 1`
+        http_code=`curl --write-out %{http_code} --output /dev/null \
+            -sH "X-Auth-Token: $token" $OCF_RESKEY_url`
         rc=$?
         if [ $rc -ne 0 ] || [ $http_code -ne 200 ]; then
-            ocf_log err "Failed to connect to the OpenStack Nova API (nova-api): $rc and $http_code"
+            ocf_log err "Failed to connect to the OpenStack Nova API" \
+                "(nova-api): $rc and $http_code"
             return $OCF_NOT_RUNNING
         fi
     fi
@@ -272,10 +281,13 @@ nova_api_start() {
         return $OCF_SUCCESS
     fi
 
-    # run the actual nova-api daemon. Don't use ocf_run as we're sending the tool's output
-    # straight to /dev/null anyway and using ocf_run would break stdout-redirection here.
-    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} --config-file=$OCF_RESKEY_config \
-        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
+    # run the actual nova-api daemon. Don't use ocf_run as we're sending the
+    # tool's output straight to /dev/null anyway and using ocf_run would break
+    # stdout-redirection here.
+    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} \
+        --config-file=$OCF_RESKEY_config \
+        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' \
+        > $OCF_RESKEY_pid
 
     # Spin waiting for the server to come up.
     # Let the CRM/LRM time us out if required
@@ -328,15 +340,16 @@ nova_api_stop() {
         fi
         count=`expr $count + 1`
         sleep 1
-        ocf_log debug "OpenStack Nova API (nova-api) still hasn't stopped yet. Waiting ..."
+        ocf_log debug "OpenStack Nova API (nova-api) still hasn't stopped" \
+            "yet. Waiting ..."
     done
 
     nova_api_status
     rc=$?
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
         # SIGTERM didn't help either, try SIGKILL
-        ocf_log info "OpenStack Nova API (nova-api) failed to stop after ${shutdown_timeout}s \
-            using SIGTERM. Trying SIGKILL ..."
+        ocf_log info "OpenStack Nova API (nova-api) failed to stop after" \
+            "${shutdown_timeout}s using SIGTERM. Trying SIGKILL ..."
         ocf_run kill -s KILL $pid
     fi
 

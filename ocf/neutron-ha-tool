@@ -166,7 +166,8 @@ neutron_ha_tool_validate() {
     check_binary $OCF_RESKEY_binary
     if [ -n "$OCF_RESKEY_os_cacert" ]; then
         if [ ! -f "$OCF_RESKEY_os_cacert" ]; then
-            ocf_log err "Failed to verify CA Certifcate Bundle ($OCF_RESKEY_os_cacert)"
+            ocf_log err "Failed to verify CA Certifcate Bundle" \
+                "($OCF_RESKEY_os_cacert)"
             return 1
         fi
     fi
@@ -207,7 +208,8 @@ neutron_ha_tool_start() {
 
     rc=$?
     if [ $rc -ne 0 ]; then
-        ocf_log err "Neutron HA Tool failed to replicate networks to DHCP agents."
+        ocf_log err "Neutron HA Tool failed to replicate networks to DHCP" \
+            "agents."
         return $OCF_ERR_GENERIC
     fi
 
@@ -215,10 +217,12 @@ neutron_ha_tool_start() {
 
     rc=$?
     if [ $rc -ne 0 ]; then
-        ocf_log err "Neutron HA Tool failed to migrate routers away from offline L3 agents."
+        ocf_log err "Neutron HA Tool failed to migrate routers away from" \
+            "offline L3 agents."
         return $OCF_ERR_GENERIC
     fi
-    ocf_log debug "Neutron HA Tool (neutron-ha-tool) router migration succeeded."
+    ocf_log debug "Neutron HA Tool (neutron-ha-tool) router migration" \
+        "succeeded."
     return $OCF_SUCCESS
 }
 
