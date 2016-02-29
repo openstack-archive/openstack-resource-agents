@@ -3,7 +3,8 @@
 #
 # OpenStack Orchestration Engine Service (heat-engine)
 #
-# Description:  Manages an OpenStack Orchestration Engine Service (heat-engine) process as an HA resource
+# Description:  Manages an OpenStack Orchestration Engine Service (heat-engine)
+#               process as an HA resource
 #
 # Authors:      Emilien Macchi
 #
@@ -203,7 +204,8 @@ heat_engine_status() {
     local rc
 
     if [ ! -f $OCF_RESKEY_pid ]; then
-        ocf_log info "OpenStack Orchestration Engine (heat-engine) is not running"
+        ocf_log info "OpenStack Orchestration Engine (heat-engine) is not \
+running"
         return $OCF_NOT_RUNNING
     else
         pid=`cat $OCF_RESKEY_pid`
@@ -214,7 +216,8 @@ heat_engine_status() {
     if [ $rc -eq 0 ]; then
         return $OCF_SUCCESS
     else
-        ocf_log info "Old PID file found, but OpenStack Orchestration Engine (heat-engine) is not running"
+        ocf_log info "Old PID file found, but OpenStack Orchestration Engine \
+(heat-engine) is not running"
         return $OCF_NOT_RUNNING
     fi
 }
@@ -233,17 +236,22 @@ heat_engine_monitor() {
         return $rc
     fi
 
-    # Check the connections according to the PID.
-    # We are sure to hit the heat-engine process and not other heat process with the same connection behavior (for example heat-api)
+    # Check the connections according to the PID.  We are sure to hit the
+    # heat-engine process and not other heat process with the same connection
+    # behavior (for example heat-api)
     pid=`cat $OCF_RESKEY_pid`
-    engine_amqp_check=`netstat -punt | grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$pid" | grep -qs "ESTABLISHED"`
+    engine_amqp_check=`netstat -punt | \
+        grep -s "$OCF_RESKEY_amqp_server_port" | grep -s "$pid" | \
+        grep -qs "ESTABLISHED"`
     rc_amqp=$?
     if [ $rc_amqp -ne 0 ]; then
-        ocf_log err "Heat Engine is not connected to the AMQP server: AMQP connection test returned $rc_amqp"
+        ocf_log err "Heat Engine is not connected to the AMQP server: AMQP \
+connection test returned $rc_amqp"
         return $OCF_NOT_RUNNING
     fi
 
-    ocf_log debug "OpenStack Orchestration Engine (heat-engine) monitor succeeded"
+    ocf_log debug "OpenStack Orchestration Engine (heat-engine) monitor \
+succeeded"
     return $OCF_SUCCESS
 }
 
@@ -253,14 +261,18 @@ heat_engine_start() {
     heat_engine_status
     rc=$?
     if [ $rc -eq $OCF_SUCCESS ]; then
-        ocf_log info "OpenStack Orchestration Engine (heat-engine) already running"
+        ocf_log info "OpenStack Orchestration Engine (heat-engine) already \
+running"
         return $OCF_SUCCESS
     fi
 
-    # run the actual heat-engine daemon. Don't use ocf_run as we're sending the tool's output
-    # straight to /dev/null anyway and using ocf_run would break stdout-redirection here.
-    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} --config-file=$OCF_RESKEY_config \
-        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
+    # run the actual heat-engine daemon. Don't use ocf_run as we're sending the
+    # tool's output straight to /dev/null anyway and using ocf_run would break
+    # stdout-redirection here.
+    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} \
+        --config-file=$OCF_RESKEY_config \
+        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' \
+        > $OCF_RESKEY_pid
 
     # Spin waiting for the server to come up.
     while true; do
@@ -285,7 +297,8 @@ heat_engine_stop() {
     heat_engine_status
     rc=$?
     if [ $rc -eq $OCF_NOT_RUNNING ]; then
-        ocf_log info "OpenStack Orchestration Engine (heat-engine) already stopped"
+        ocf_log info "OpenStack Orchestration Engine (heat-engine) already \
+stopped"
         return $OCF_SUCCESS
     fi
 
@@ -294,7 +307,8 @@ heat_engine_stop() {
     ocf_run kill -s TERM $pid
     rc=$?
     if [ $rc -ne 0 ]; then
-        ocf_log err "OpenStack Orchestration Engine (heat-engine) couldn't be stopped"
+        ocf_log err "OpenStack Orchestration Engine (heat-engine) couldn't be \
+stopped"
         exit $OCF_ERR_GENERIC
     fi
 
@@ -312,15 +326,16 @@ heat_engine_stop() {
         fi
         count=`expr $count + 1`
         sleep 1
-        ocf_log debug "OpenStack Orchestration Engine (heat-engine) still hasn't stopped yet. Waiting ..."
+        ocf_log debug "OpenStack Orchestration Engine (heat-engine) still \
+hasn't stopped yet. Waiting ..."
     done
 
     heat_engine_status
     rc=$?
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
         # SIGTERM didn't help either, try SIGKILL
-        ocf_log info "OpenStack Orchestration Engine (heat-engine) failed to stop after ${shutdown_timeout}s \
-            using SIGTERM. Trying SIGKILL ..."
+        ocf_log info "OpenStack Orchestration Engine (heat-engine) failed to \
+stop after ${shutdown_timeout}s using SIGTERM. Trying SIGKILL ..."
         ocf_run kill -s KILL $pid
     fi
 

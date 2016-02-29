@@ -3,7 +3,8 @@
 #
 # OpenStack ImageService (glance-api)
 #
-# Description:  Manages an OpenStack ImageService (glance-api) process as an HA resource
+# Description:  Manages an OpenStack ImageService (glance-api) process as an HA
+#               resource
 #
 # Authors:      Martin Gerhard Loschwitz
 #
@@ -219,7 +220,8 @@ glance_api_status() {
     if [ $rc -eq 0 ]; then
         return $OCF_SUCCESS
     else
-        ocf_log info "Old PID file found, but OpenStack ImageService (glance-api) is not running"
+        ocf_log info "Old PID file found, but OpenStack ImageService \
+(glance-api) is not running"
         return $OCF_NOT_RUNNING
     fi
 }
@@ -237,7 +239,8 @@ glance_api_monitor() {
 
     # Monitor the RA by retrieving the image list
     if [ -n "$OCF_RESKEY_os_username" ] && [ -n "$OCF_RESKEY_os_password" ] \
-    && [ -n "$OCF_RESKEY_os_tenant_name" ] && [ -n "$OCF_RESKEY_os_auth_url" ]; then
+        && [ -n "$OCF_RESKEY_os_tenant_name" ] \
+        && \ [ -n "$OCF_RESKEY_os_auth_url" ]; then
         ocf_run -q $OCF_RESKEY_client_binary \
         --os_username "$OCF_RESKEY_os_username" \
         --os_password "$OCF_RESKEY_os_password" \
@@ -246,7 +249,8 @@ glance_api_monitor() {
         index > /dev/null 2>&1
         rc=$?
         if [ $rc -ne 0 ]; then
-            ocf_log err "Failed to connect to the OpenStack ImageService (glance-api): $rc"
+            ocf_log err "Failed to connect to the OpenStack ImageService \
+(glance-api): $rc"
             return $OCF_NOT_RUNNING
         fi
     fi
@@ -265,10 +269,13 @@ glance_api_start() {
         return $OCF_SUCCESS
     fi
 
-    # run the actual glance-api daemon. Don't use ocf_run as we're sending the tool's output
-    # straight to /dev/null anyway and using ocf_run would break stdout-redirection here.
-    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} --config-file $OCF_RESKEY_config \
-        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
+    # run the actual glance-api daemon. Don't use ocf_run as we're sending the
+    # tool's output straight to /dev/null anyway and using ocf_run would break
+    # stdout-redirection here.
+    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} \
+        --config-file $OCF_RESKEY_config \
+        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' \
+        > $OCF_RESKEY_pid
 
     # Spin waiting for the server to come up.
     # Let the CRM/LRM time us out if required
@@ -321,15 +328,16 @@ glance_api_stop() {
         fi
         count=`expr $count + 1`
         sleep 1
-        ocf_log debug "OpenStack ImageService (glance-api) still hasn't stopped yet. Waiting ..."
+        ocf_log debug "OpenStack ImageService (glance-api) still hasn't \
+stopped yet. Waiting ..."
     done
 
     glance_api_status
     rc=$?
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
         # SIGTERM didn't help either, try SIGKILL
-        ocf_log info "OpenStack ImageService (glance-api) failed to stop after ${shutdown_timeout}s \
-            using SIGTERM. Trying SIGKILL ..."
+        ocf_log info "OpenStack ImageService (glance-api) failed to stop \
+after ${shutdown_timeout}s using SIGTERM. Trying SIGKILL ..."
         ocf_run kill -s KILL $pid
     fi
 
