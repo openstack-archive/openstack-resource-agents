@@ -3,7 +3,8 @@
 #
 # OpenStack ImageService (glance-registry)
 #
-# Description:  Manages an OpenStack ImageService (glance-registry) process as an HA resource
+# Description:  Manages an OpenStack ImageService (glance-registry) process as
+#               an HA resource
 #
 # Authors:      Martin Gerhard Loschwitz
 #
@@ -40,14 +41,14 @@ OCF_RESKEY_config_default="/etc/glance/glance-registry.conf"
 OCF_RESKEY_user_default="glance"
 OCF_RESKEY_pid_default="$HA_RSCTMP/$OCF_RESOURCE_INSTANCE.pid"
 OCF_RESKEY_url_default="http://127.0.0.1:9191/images"
-OCF_RESKEY_keystone_get_token_url_default="http://127.0.0.1:5000/v2.0/tokens"
+OCF_RESKEY_keystone_get_token_url_def="http://127.0.0.1:5000/v2.0/tokens"
 
 : ${OCF_RESKEY_binary=${OCF_RESKEY_binary_default}}
 : ${OCF_RESKEY_config=${OCF_RESKEY_config_default}}
 : ${OCF_RESKEY_user=${OCF_RESKEY_user_default}}
 : ${OCF_RESKEY_pid=${OCF_RESKEY_pid_default}}
 : ${OCF_RESKEY_url=${OCF_RESKEY_url_default}}
-: ${OCF_RESKEY_keystone_get_token_url=${OCF_RESKEY_keystone_get_token_url_default}}
+: ${OCF_RESKEY_keystone_get_token_url=${OCF_RESKEY_keystone_get_token_url_def}}
 
 #######################################################################
 
@@ -128,7 +129,7 @@ The default URL to use to acquire a ImageService (glance-registry) token for mon
 of OpenStack ImageService (glance-registry)
 </longdesc>
 <shortdesc lang="en">OpenStack ImageService (glance-registry) url</shortdesc>
-<content type="string" default="${OCF_RESKEY_keystone_get_token_url_default}" />
+<content type="string" default="${OCF_RESKEY_keystone_get_token_url_def}" />
 </parameter>
 
 <parameter name="os_username" unique="0" required="0">
@@ -226,7 +227,8 @@ glance_registry_status() {
     if [ $rc -eq 0 ]; then
         return $OCF_SUCCESS
     else
-        ocf_log info "Old PID file found, but OpenStack ImageService (glance-registry) is not running"
+        ocf_log info "Old PID file found, but OpenStack ImageService \
+            (glance-registry) is not running"
         return $OCF_NOT_RUNNING
     fi
 }
@@ -247,15 +249,21 @@ glance_registry_monitor() {
     # Check whether we are supposed to monitor by logging into glance-registry
     # and do it if that's the case.
     if [ -n "$OCF_RESKEY_os_username" ] && [ -n "$OCF_RESKEY_os_password" ] \
-    && [ -n "$OCF_RESKEY_os_tenant_name" ] && [ -n "$OCF_RESKEY_keystone_get_token_url" ]; then
-        token=`curl -s -d  "{\"auth\":{\"passwordCredentials\": {\"username\": \"$OCF_RESKEY_os_username\", \
-            \"password\": \"$OCF_RESKEY_os_password\"}, \"tenantName\": \"$OCF_RESKEY_os_tenant_name\"}}" \
-            -H "Content-type: application/json" $OCF_RESKEY_keystone_get_token_url | tr ',' '\n' | grep '"id":' \
-            | cut -d'"' -f4 | head --lines 1`
-        http_code=`curl --write-out %{http_code} --output /dev/null -sH "X-Auth-Token: $token" $OCF_RESKEY_url`
+        && [ -n "$OCF_RESKEY_os_tenant_name" ] \
+        && [ -n "$OCF_RESKEY_keystone_get_token_url" ]; then
+        token=`curl -s -d  "{\"auth\":{\"passwordCredentials\": \
+            {\"username\": \"$OCF_RESKEY_os_username\", \
+            \"password\": \"$OCF_RESKEY_os_password\"}, \
+            \"tenantName\": \"$OCF_RESKEY_os_tenant_name\"}}" \
+            -H "Content-type: application/json" \
+            $OCF_RESKEY_keystone_get_token_url | \
+            tr ',' '\n' | grep '"id":' | cut -d'"' -f4 | head --lines 1`
+        http_code=`curl --write-out %{http_code} --output /dev/null \
+            -sH "X-Auth-Token: $token" $OCF_RESKEY_url`
         rc=$?
         if [ $rc -ne 0 ] || [ $http_code -ne 200 ]; then
-            ocf_log err "Failed to connect to the OpenStack ImageService (glance-registry): $rc and $http_code"
+            ocf_log err "Failed to connect to the OpenStack ImageService \
+                (glance-registry): $rc and $http_code"
             return $OCF_NOT_RUNNING
         fi
     fi
@@ -274,10 +282,13 @@ glance_registry_start() {
         return $OCF_SUCCESS
     fi
 
-    # run the actual glance-registry daemon. Don't use ocf_run as we're sending the tool's output
-    # straight to /dev/null anyway and using ocf_run would break stdout-redirection here.
-    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} --config-file $OCF_RESKEY_config \
-        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' > $OCF_RESKEY_pid
+    # run the actual glance-registry daemon. Don't use ocf_run as we're sending
+    # the tool's output straight to /dev/null anyway and using ocf_run would
+    # break stdout-redirection here.
+    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} \
+        --config-file $OCF_RESKEY_config \
+        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' \
+        > $OCF_RESKEY_pid
 
     # Spin waiting for the server to come up.
     # Let the CRM/LRM time us out if required
@@ -312,7 +323,8 @@ glance_registry_stop() {
     ocf_run kill -s TERM $pid
     rc=$?
     if [ $rc -ne 0 ]; then
-        ocf_log err "OpenStack ImageService (glance-registry) couldn't be stopped"
+        ocf_log err "OpenStack ImageService (glance-registry) couldn't be \
+            stopped"
         exit $OCF_ERR_GENERIC
     fi
 
@@ -330,15 +342,16 @@ glance_registry_stop() {
         fi
         count=`expr $count + 1`
         sleep 1
-        ocf_log debug "OpenStack ImageService (glance-registry) still hasn't stopped yet. Waiting ..."
+        ocf_log debug "OpenStack ImageService (glance-registry) still hasn't \
+            stopped yet. Waiting ..."
     done
 
     glance_registry_status
     rc=$?
     if [ $rc -ne $OCF_NOT_RUNNING ]; then
         # SIGTERM didn't help either, try SIGKILL
-        ocf_log info "OpenStack ImageService (glance-registry) failed to stop after ${shutdown_timeout}s \
-            using SIGTERM. Trying SIGKILL ..."
+        ocf_log info "OpenStack ImageService (glance-registry) failed to stop \
+            after ${shutdown_timeout}s using SIGTERM. Trying SIGKILL ..."
         ocf_run kill -s KILL $pid
     fi
 
