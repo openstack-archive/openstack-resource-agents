@@ -1,0 +1,8 @@
+Code-Review+2: Adam Spiers <aspiers@suse.com>
+Workflow+1: Adam Spiers <aspiers@suse.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Sat, 05 Mar 2016 13:47:55 +0000
+Reviewed-on: https://review.openstack.org/288863
+Project: openstack/openstack-resource-agents
+Branch: refs/heads/master
