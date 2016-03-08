@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 #
 # NovaCompute agent manages compute daemons.
@@ -256,7 +256,7 @@ evacuate_monitor() {
 
     handle_evacuations $(
         attrd_updater -n evacuate -A \
-            2> >(grep -v "attribute does not exist" 1>&2) |
+            2>&1 | grep -v "attribute does not exist" |
             sed 's/ value=""/ value="no"/' |
             tr '="' '  ' |
             awk '{print $4" "$6}'
