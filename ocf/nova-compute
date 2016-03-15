@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 #
-# NovaCompute agent manages compute daemons.
+# nova-compute agent manages compute daemons.
 #
 # Copyright (c) 2015
 #
@@ -41,7 +41,7 @@ meta_data() {
     cat <<END
 <?xml version="1.0"?>
 <!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
-<resource-agent name="NovaCompute" version="1.0">
+<resource-agent name="nova-compute" version="1.0">
 <version>1.0</version>
 
 <longdesc lang="en">
