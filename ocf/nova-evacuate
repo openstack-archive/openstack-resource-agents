@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 #
 #
-# NovaCompute agent manages compute daemons.
+# nova-evacuate agent manages evacuation of nodes running nova-compute.
 #
 # Copyright (c) 2015
 #
@@ -41,13 +41,13 @@ meta_data() {
     cat <<END
 <?xml version="1.0"?>
 <!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
-<resource-agent name="NovaCompute" version="1.0">
+<resource-agent name="nova-evacuate" version="1.0">
 <version>1.0</version>
 
 <longdesc lang="en">
-OpenStack Nova Compute Server.
+Facility for tacking a list of compute nodes and reliably evacuating the ones that fence_evacuate has flagged.
 </longdesc>
-<shortdesc lang="en">OpenStack Nova Compute Server</shortdesc>
+<shortdesc lang="en">Evacuator for OpenStack Nova Compute Server</shortdesc>
 
 <parameters>
 
@@ -131,24 +131,12 @@ will be lost.
 <content type="boolean" default="0" />
 </parameter>
 
-<parameter name="evacuation_delay" unique="0" required="0">
-<longdesc lang="en">
-How long to wait for nova to finish evacuating instances elsewhere
-before starting nova-compute.  Only used when the agent detects
-evacuations might be in progress.
-
-You may need to increase the start timeout when increasing this value.
-</longdesc>
-<shortdesc lang="en">Delay to allow evacuations time to complete</shortdesc>
-<content type="integer" default="120" />
-</parameter>
-
 </parameters>
 
 <actions>
-<action name="start"        timeout="600" />
-<action name="stop"         timeout="300" />
-<action name="monitor"      timeout="20" interval="10" depth="0"/>
+<action name="start"        timeout="20" />
+<action name="stop"         timeout="20" />
+<action name="monitor"      timeout="600" interval="10" depth="0"/>
 <action name="validate-all" timeout="20" />
 <action name="meta-data"    timeout="5" />
 </actions>
@@ -165,7 +153,7 @@ sigterm_handler() {
     return
 }
 
-nova_usage() {
+evacuate_usage() {
     cat <<END
 usage: $0 {start|stop|monitor|validate-all|meta-data}
 
@@ -173,105 +161,128 @@ Expects to have a fully populated OCF RA-compliant environment set.
 END
 }
 
-nova_pid() {
-    ps axf | grep python.*nova-compute | grep -v grep | awk '{print $1}'
+evacuate_stop() {
+    rm -f "$statefile"
+    return $OCF_SUCCESS
 }
 
-nova_start() {
-    nova_monitor
-    if [ $? = $OCF_SUCCESS ]; then
-        return $OCF_SUCCESS
+evacuate_start() {
+    touch "$statefile"
+    # Do not invole monitor here so that the start timeout can be low
+    return $?
+}
+
+update_evacuation() {
+    attrd_updater -p -n evacuate -Q -N ${1} -U ${2}
+    arc=$?
+    if [ ${arc} != 0 ]; then
+        ocf_log warn "Can not set evacuation state of ${1} to ${2}: ${arc}"
     fi
+    return ${arc}
+}
 
-    state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | \
-        sed -e 's/.*value=//' | tr -d '"' )
-    if [ "x$state" = x ]; then
-        : no fencing to recover
+handle_evacuations() {
+    while [ $# -gt 0 ]; do
+        node=$1
+        state=$2
+        shift; shift;
+        need_evacuate=0
 
-    elif [ "x$state" = xno ]; then
-        : has been evacuated, however it could have been 1s ago
-        ocf_log info "Pausing to give evacuations from ${NOVA_HOST} time to" \
-            "complete"
-        sleep ${OCF_RESKEY_evacuation_delay}
+        case $state in
+            "")
+                ;;
+            no)
+                ocf_log debug "$node is either fine or already handled"
+                ;;
+            yes) need_evacuate=1
+                ;;
+            *@*)
+                where=$(echo $state | awk -F@ '{print $1}')
+                when=$(echo $state | awk -F@ '{print $2}')
+                now=$(date +%s)
 
-        fence_compute ${fence_options} -o on -n ${NOVA_HOST}
-        attrd_updater -p -n evacuate -N ${NOVA_HOST} -D
-    else
-        ocf_log info "Waiting for pending evacuations from ${NOVA_HOST}"
-        while [ "x$state" != "xno" -a "x$state" != x ]; do
-            state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | \
-                sed -e 's/.*value=//' | tr -d '"' )
-            sleep 5
-        done
+                if [ $(($now - $when)) -gt 60 ]; then
+                    ocf_log info "Processing partial evacuation of $node by" \
+                        "$where at $when"
+                    need_evacuate=1
+                else
+                    # Give some time for any in-flight evacuations to either
+                    # complete or fail Nova won't react well if there are two
+                    # overlapping requests
+                    ocf_log info "Deferring processing partial evacuation of" \
+                        "$node by $where at $when"
+                fi
+                ;;
+        esac
 
-        ocf_log info "Pausing to give evacuations from ${NOVA_HOST} time to" \
-            "complete"
-        sleep ${OCF_RESKEY_evacuation_delay}
+        if [ $need_evacuate = 1 ]; then
+            found=0
+            ocf_log notice "Initiating evacuation of $node"
 
-        fence_compute ${fence_options} -o on -n ${NOVA_HOST}
-        attrd_updater -p -n evacuate -N ${NOVA_HOST} -D
-    fi
+            for known in $(fence_compute ${fence_options} -o list | \
+                tr -d ','); do
+                if [ ${known} = ${node} ]; then
+                    found=1
+                    break
+                fi
+            done
 
-    export LIBGUESTFS_ATTACH_METHOD=appliance
-    su nova -s /bin/sh -c /usr/bin/nova-compute &
+            if [ $found = 0 ]; then
+                ocf_log info "Nova does not know about ${node}"
+                # Dont mark as no because perhaps nova is unavailable right now
+                continue
+            fi
 
-    rc=$OCF_NOT_RUNNING
-    ocf_log info "Waiting for nova to start"
-    while [ $rc != $OCF_SUCCESS ]; do
-        nova_monitor
-        rc=$?
+            update_evacuation ${node} "$(uname -n)@$(date +%s)"
+            if [ $? != 0 ]; then
+                return $OCF_SUCCESS
+            fi
+
+            fence_compute ${fence_options} -o off -n $node
+            rc=$?
+
+            if [ $rc = 0 ]; then
+                update_evacuation ${node} no
+                ocf_log notice "Completed evacuation of $node"
+            else
+                ocf_log warn "Evacuation of $node failed: $rc"
+                update_evacuation ${node} yes
+            fi
+        fi
     done
 
     return $OCF_SUCCESS
 }
 
-nova_stop() {
-    pid=$(nova_pid)
-    if [ "x$pid" != x ]; then
-        su nova -c "kill -TERM $pid" -s /bin/bash
+evacuate_monitor() {
+    if [ ! -f "$statefile" ]; then
+        return $OCF_NOT_RUNNING
     fi
 
-    while [ "x$pid" != x ]; do
-        sleep 1
-        pid=$(nova_pid)
-    done
-
+    handle_evacuations $(
+        attrd_updater -n evacuate -A \
+            2> >(grep -v "attribute does not exist" 1>&2) |
+            sed 's/ value=""/ value="no"/' |
+            tr '="' '  ' |
+            awk '{print $4" "$6}'
+    )
     return $OCF_SUCCESS
 }
 
-nova_monitor() {
-    pid=$(nova_pid)
-    if [ "x$pid" != x ]; then
-        ## TEMPORARY disable call to fence_compute to avoid noise on first
-        ## first startup due to nova-compute not being fast enough to populate
-        ## the db and fence_compute checking if node exists and it's enabled
-        #state=$(fence_compute ${fence_options} -o status -n $NOVA_HOST | grep Status)
-        #if [ "x$state" = "xStatus: ON" ]; then
-            return $OCF_SUCCESS
-        #else
-        #    ocf_exit_reason "Nova status: $state"
-        #    return $OCF_ERR_GENERIC
-        #fi
-    fi
-
-    return $OCF_NOT_RUNNING
-}
-
-nova_notify() {
-    return $OCF_SUCCESS
-}
-
-nova_validate() {
+evacuate_validate() {
     rc=$OCF_SUCCESS
     fence_options=""
 
-    check_binary crudini
-    check_binary nova-compute
+    check_binary fence_compute
 
-    if [ ! -f /etc/nova/nova.conf ]; then
-        ocf_exit_reason "/etc/nova/nova.conf not found"
-        exit $OCF_ERR_CONFIGURED
+    # Is the state directory writable?
+    state_dir=$(dirname $statefile)
+    touch "$state_dir/$$"
+    if [ $? != 0 ]; then
+        ocf_exit_reason "Invalid state directory: $state_dir"
+        return $OCF_ERR_ARGS
     fi
+    rm -f "$state_dir/$$"
 
     if [ -z "${OCF_RESKEY_auth_url}" ]; then
         ocf_exit_reason "auth_url not configured"
@@ -335,74 +346,39 @@ nova_validate() {
         fence_options="${fence_options} -e ${OCF_RESKEY_endpoint_type}"
     fi
 
-    # we take a chance here and hope that host is either not configured
-    # or configured in nova.conf
-
-    NOVA_HOST=$(crudini --get /etc/nova/nova.conf DEFAULT host 2>/dev/null)
-    if [ $? = 1 ]; then
-        if [ "x${OCF_RESKEY_domain}" != x ]; then
-            NOVA_HOST=$(uname -n | awk -F. '{print $1}')
-        else
-            NOVA_HOST=$(uname -n)
-        fi
-    fi
-
-    # We only need to check a configured value, calculated ones are fine
-    crudini --get /etc/nova/nova.conf DEFAULT host 2>/dev/null
-    if [ $? = 0 ]; then
-        if [ "x${OCF_RESKEY_domain}" != x ]; then
-            short_host=$(uname -n | awk -F. '{print $1}')
-            if [ "x$NOVA_HOST" != "x${short_host}" ]; then
-                ocf_exit_reason "Invalid Nova host name, must be" \
-                    "${short_host} in order for instance recovery to function"
-                rc=$OCF_ERR_CONFIGURED
-            fi
-
-        elif [ "x$NOVA_HOST" != "x$(uname -n)" ]; then
-            ocf_exit_reason "Invalid Nova host name, must be $(uname -n) in" \
-                "order for instance recovery to function"
-            rc=$OCF_ERR_CONFIGURED
-        fi
-    fi
-
     if [ $rc != $OCF_SUCCESS ]; then
         exit $rc
     fi
     return $rc
 }
 
-: ${OCF_RESKEY_evacuation_delay=120}
+statefile="${HA_RSCTMP}/${OCF_RESOURCE_INSTANCE}.active"
+
 case $__OCF_ACTION in
+    start)
+        evacuate_validate
+        evacuate_start
+        ;;
+    stop)
+        evacuate_stop
+        ;;
+    monitor)
+        evacuate_validate
+        evacuate_monitor
+        ;;
     meta-data)
         meta_data
         exit $OCF_SUCCESS
         ;;
     usage|help)
-        nova_usage
+        evacuate_usage
         exit $OCF_SUCCESS
-        ;;
-esac
-
-case $__OCF_ACTION in
-    start)
-        nova_validate
-        nova_start
-        ;;
-    stop)
-        nova_stop
-        ;;
-    monitor)
-        nova_validate
-        nova_monitor
-        ;;
-    notify)
-        nova_notify
         ;;
     validate-all)
         exit $OCF_SUCCESS
         ;;
     *)
-        nova_usage
+        evacuate_usage
         exit $OCF_ERR_UNIMPLEMENTED
         ;;
 esac
