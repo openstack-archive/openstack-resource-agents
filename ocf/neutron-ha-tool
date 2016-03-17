@@ -3,14 +3,21 @@
 #
 # OpenStack HA tool for Neutron (neutron-ha-tool)
 #
-# Description:  This resource agent wraps the Neutron HA Tool(neutron-ha-tool).
-#               It can be used to monitor neutron for the availability of the
-#               l3-agents and migrate routers away from agents that are
-#               currently offline. Additionally it makes sure that dns and dhcp
-#               configuration is synchronized across all dhcp-agents.  The
-#               neutron-ha-tool is currently part of the openstack-network
-#               cookbook for chef. The lastest release is available here:
-#               https://raw.githubusercontent.com/stackforge/cookbook-openstack-network/master/files/default/neutron-ha-tool.py
+# This resource agent wraps the neutron-ha-tool Python script.
+# It can be used to monitor neutron for the availability of the
+# l3-agents and migrate routers away from agents that are
+# currently offline. Additionally it makes sure that dns and dhcp
+# configuration is synchronized across all dhcp-agents.  The
+# neutron-ha-tool was originally part of the openstack-network
+# cookbook for Chef. However as of icehouse it got dropped
+# from upstream, and is now maintained here:
+#
+#   https://github.com/SUSE-Cloud/cookbook-openstack-network/blob/neutron-ha-tool-maintenance/files/default/neutron-ha-tool.py
+#
+# You can see a brief explanation of how this RA works in this
+# video:
+#
+#   https://youtu.be/vBZgtHgSdOY?t=33m39s
 #
 # Authors: Ralf Haferkamp
 # Mainly inspired by the Neutron L3 resource agent written by Emilien Macchi
