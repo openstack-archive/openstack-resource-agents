@@ -22,7 +22,7 @@
 # Authors: Ralf Haferkamp
 # Mainly inspired by the Neutron L3 resource agent written by Emilien Macchi
 #
-# Support:      openstack@lists.launchpad.net
+# Support:      openstack@lists.openstack.org
 # License:      Apache Software License (ASL) 2.0
 #
 #
