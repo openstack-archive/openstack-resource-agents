@@ -199,6 +199,26 @@ neutron_ha_tool_status() {
 }
 
 neutron_ha_tool_monitor() {
+    if ! [ -e "$statefile" ]; then
+        # neutron-ha-tool is run on a single node at a time, i.e. in
+        # active/passive mode.  So we use this state file to keep
+        # track of whether it's active on the current node, and if
+        # Pacemaker does a probe on a node where it's not active, we
+        # skip the l3-agent check and always return OCF_NOT_RUNNING,
+        # otherwise we'd get messages from pengine like:
+        #
+        #   error: Resource neutron-ha-tool (ocf::neutron-ha-tool) is active on
+        #       2 nodes attempting recovery
+        #   warning: See http://clusterlabs.org/wiki/FAQ#Resource_is_Too_Active
+        #       for more information.
+        #
+        # and Pacemaker could attempt unnecessary recovery according to the
+        # value of the cluster-wide "multiple-active" option.
+        ocf_log debug "neutron-ha-tool not currently active on this node; " \
+            "skipping l3-agent check"
+        return $OCF_NOT_RUNNING
+    fi
+
     INSECURE=""
     if ocf_is_true $OCF_RESKEY_os_insecure; then
         INSECURE="--insecure"
@@ -217,6 +237,12 @@ neutron_ha_tool_monitor() {
 }
 
 neutron_ha_tool_start() {
+    touch "$statefile"
+    if ! [ -e "$statefile" ]; then
+        ocf_log err "Failed to create $statefile - aborting!"
+        return $OCF_ERR_GENERIC
+    fi
+
     INSECURE=""
     if ocf_is_true $OCF_RESKEY_os_insecure; then
         INSECURE="--insecure"
@@ -245,7 +271,13 @@ neutron_ha_tool_start() {
 }
 
 neutron_ha_tool_stop() {
-    # This is a noop
+    rm -f "$statefile"
+    if [ -e "$statefile" ]; then
+        ocf_log err "Uh-oh - failed to remove $statefile!"
+        # If we can't even remove a file in tmpfs (/run), something
+        # is *really* badly wrong, so fence the node.
+        return $OCF_ERR_GENERIC
+    fi
     return $OCF_SUCCESS
 }
 
@@ -274,6 +306,8 @@ export OS_PASSWORD=$OCF_RESKEY_os_password
 if [ -n "$OCF_RESKEY_os_cacert" ]; then
     export OS_CACERT=$OCF_RESKEY_os_cacert
 fi
+
+statefile="${HA_RSCTMP}/${OCF_RESOURCE_INSTANCE}.active"
 
 # What kind of method was invoked?
 case "$1" in
