@@ -120,7 +120,9 @@ This option should be used with caution.
 
 <parameter name="no_shared_storage" unique="0" required="0">
 <longdesc lang="en">
-Disable shared storage recovery for instances. Use at your own risk!
+Disable shared storage recovery for instances. This will cause instances
+on dead hypervisors to be rebuilt from their original image or volume,
+so anything on ephemeral storage will be lost.
 </longdesc>
 <shortdesc lang="en">Disable shared storage recovery for instances</shortdesc>
 <content type="boolean" default="0" />
