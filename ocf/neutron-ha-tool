@@ -248,7 +248,7 @@ neutron_ha_tool_start() {
         INSECURE="--insecure"
     fi
 
-    ${OCF_RESKEY_binary} --replicate-dhcp $INSECURE
+    ${OCF_RESKEY_binary} --replicate-dhcp --retry $INSECURE
 
     rc=$?
     if [ $rc -ne 0 ]; then
@@ -257,7 +257,7 @@ neutron_ha_tool_start() {
         return $OCF_ERR_GENERIC
     fi
 
-    ${OCF_RESKEY_binary} --l3-agent-migrate --now $INSECURE
+    ${OCF_RESKEY_binary} --l3-agent-migrate --retry --now $INSECURE
 
     rc=$?
     if [ $rc -ne 0 ]; then
