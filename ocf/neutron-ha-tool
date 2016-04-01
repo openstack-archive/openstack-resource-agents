@@ -229,7 +229,7 @@ neutron_ha_tool_monitor() {
     rc=$?
     if [ $rc -eq 2 ]; then
         ocf_log err "Some Neutron routers need migration."
-        return $OCF_NOT_RUNNING
+        return $OCF_ERR_GENERIC
     fi
 
     ocf_log debug "Neutron HA Tool (neutron-ha-tool) monitor succeeded"
