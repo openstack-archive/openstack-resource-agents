@@ -1,0 +1,236 @@
+#!/bin/sh
+#
+#
+# nova-compute-wait agent manages compute daemons.
+#
+# Copyright (c) 2015
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of version 2 of the GNU General Public License as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it would be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# Further, this software is distributed without any warranty that it is
+# free of the rightful claim of any third person regarding infringement
+# or the like.  Any license provided herein, whether implied or
+# otherwise, applies only to this software file.  Patent licenses, if
+# any, provided herein do not apply to combinations of this program with
+# other software, or any other product whatsoever.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write the Free Software Foundation,
+# Inc., 59 Temple Place - Suite 330, Boston MA 02111-1307, USA.
+#
+
+#######################################################################
+# Initialization:
+
+
+###
+: ${OCF_FUNCTIONS_DIR=${OCF_ROOT}/lib/heartbeat}
+. ${OCF_FUNCTIONS_DIR}/ocf-shellfuncs
+###
+
+: ${__OCF_ACTION=$1}
+
+#######################################################################
+
+meta_data() {
+	cat <<END
+<?xml version="1.0"?>
+<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
+<resource-agent name="nova-compute-wait" version="1.0">
+<version>1.0</version>
+
+<longdesc lang="en">
+OpenStack Nova Compute Server.
+</longdesc>
+<shortdesc lang="en">OpenStack Nova Compute Server</shortdesc>
+
+<parameters>
+
+<parameter name="auth_url" unique="0" required="1">
+<longdesc lang="en">
+Deprecated option not in use
+</longdesc>
+<shortdesc lang="en">Deprecated</shortdesc>
+<content type="string" default="" />
+</parameter>
+
+<parameter name="username" unique="0" required="1">
+<longdesc lang="en">
+Deprecated option not in use
+</longdesc>
+<shortdesc lang="en">Deprecated</shortdesc>
+</parameter>
+
+<parameter name="password" unique="0" required="1">
+<longdesc lang="en">
+Deprecated option not in use
+</longdesc>
+<shortdesc lang="en">Deprecated</shortdesc>
+<content type="string" default="" />
+</parameter>
+
+<parameter name="tenant_name" unique="0" required="1">
+<longdesc lang="en">
+Deprecated option not in use
+</longdesc>
+<shortdesc lang="en">Deprecated</shortdesc>
+<content type="string" default="" />
+</parameter>
+
+<parameter name="domain" unique="0" required="0">
+<longdesc lang="en">
+DNS domain in which hosts live, useful when the cluster uses short names and nova uses FQDN
+</longdesc>
+<shortdesc lang="en">DNS domain</shortdesc>
+<content type="string" default="" />
+</parameter>
+
+<parameter name="endpoint_type" unique="0" required="0">
+<longdesc lang="en">
+Deprecated option not in use
+</longdesc>
+<shortdesc lang="en">Deprecated</shortdesc>
+<content type="string" default="" />
+</parameter>
+
+<parameter name="no_shared_storage" unique="0" required="0">
+<longdesc lang="en">
+Deprecated option not in use
+</longdesc>
+<shortdesc lang="en">Deprecated</shortdesc>
+<content type="boolean" default="0" />
+</parameter>
+
+<parameter name="evacuation_delay" unique="0" required="0">
+<longdesc lang="en">
+How long to wait for nova to finish evacuating instances elsewhere
+before starting nova-compute.  Only used when the agent detects
+evacuations might be in progress.
+
+You may need to increase the start timeout when increasing this value.
+</longdesc>
+<shortdesc lang="en">Delay to allow evacuations time to complete</shortdesc>
+<content type="integer" default="120" />
+</parameter>
+
+</parameters>
+
+<actions>
+<action name="start"        timeout="600" />
+<action name="stop"         timeout="300" />
+<action name="monitor"      timeout="20" interval="10" depth="0"/>
+<action name="validate-all" timeout="20" />
+<action name="meta-data"    timeout="5" />
+</actions>
+</resource-agent>
+END
+}
+
+#######################################################################
+
+# don't exit on TERM, to test that lrmd makes sure that we do exit
+trap sigterm_handler TERM
+sigterm_handler() {
+	ocf_log info "They use TERM to bring us down. No such luck."
+	return
+}
+
+nova_usage() {
+	cat <<END
+usage: $0 {start|stop|monitor|validate-all|meta-data}
+
+Expects to have a fully populated OCF RA-compliant environment set.
+END
+}
+
+nova_start() {
+    state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | sed -e 's/.*value=//' | tr -d '"' )
+    if [ "x$state" = x ]; then
+	: never been fenced
+
+    elif [ "x$state" = xno ]; then
+	: has been evacuated, however it could have been 1s ago
+	ocf_log info "Pausing to give evacuations from ${NOVA_HOST} time to complete"
+	sleep ${OCF_RESKEY_evacuation_delay}
+
+    else
+	ocf_log info "Waiting for pending evacuations from ${NOVA_HOST}"
+	while [ "x$state" != "xno" ]; do
+	    state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | sed -e 's/.*value=//' | tr -d '"' )
+	    sleep 5
+	done
+
+	ocf_log info "Pausing to give evacuations from ${NOVA_HOST} time to complete"
+	sleep ${OCF_RESKEY_evacuation_delay}
+    fi
+    return $OCF_SUCCESS
+}
+
+nova_stop() {
+    return $OCF_SUCCESS
+}
+
+nova_monitor() {
+    return $OCF_SUCCESS
+}
+
+nova_notify() {
+    return $OCF_SUCCESS
+}
+
+nova_validate() {
+    rc=$OCF_SUCCESS
+
+    check_binary crudini
+    check_binary nova-compute
+
+    if [ ! -f /etc/nova/nova.conf ]; then
+	   ocf_exit_reason "/etc/nova/nova.conf not found"
+	   exit $OCF_ERR_CONFIGURED
+    fi
+
+    NOVA_HOST=$(crudini --get /etc/nova/nova.conf DEFAULT host 2>/dev/null)
+    if [ $? = 1 ]; then
+        short_host=$(uname -n | awk -F. '{print $1}')
+        if [ "x${OCF_RESKEY_domain}" != x ]; then
+            NOVA_HOST=${short_host}.${OCF_RESKEY_domain}
+        else
+            NOVA_HOST=$(uname -n)
+        fi
+    fi
+
+    if [ $rc != $OCF_SUCCESS ]; then
+	exit $rc
+    fi
+    return $rc
+}
+
+: ${OCF_RESKEY_evacuation_delay=120}
+case $__OCF_ACTION in
+meta-data)	meta_data
+		exit $OCF_SUCCESS
+		;;
+usage|help)	nova_usage
+		exit $OCF_SUCCESS
+		;;
+esac
+
+case $__OCF_ACTION in
+start)		nova_validate; nova_start;;
+stop)		nova_stop;;
+monitor)	nova_validate; nova_monitor;;
+notify)		nova_notify;;
+validate-all)	exit $OCF_SUCCESS;;
+*)		nova_usage
+		exit $OCF_ERR_UNIMPLEMENTED
+		;;
+esac
+rc=$?
+ocf_log debug "${OCF_RESOURCE_INSTANCE} $__OCF_ACTION : $rc"
+exit $rc
