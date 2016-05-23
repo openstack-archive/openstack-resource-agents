@@ -1,0 +1,11 @@
+Code-Review+1: Vincent Untz <vuntz@suse.com>
+Code-Review+1: Norbert Illes <norbert.e.illes@ericsson.com>
+Code-Review+1: Andrew Beekhof <andrew@beekhof.net>
+Code-Review+2: Adam Spiers <aspiers@suse.com>
+Workflow+1: Adam Spiers <aspiers@suse.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 23 May 2016 10:37:12 +0000
+Reviewed-on: https://review.openstack.org/314065
+Project: openstack/openstack-resource-agents
+Branch: refs/heads/master
