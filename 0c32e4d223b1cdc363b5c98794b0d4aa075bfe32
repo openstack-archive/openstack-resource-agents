@@ -1,0 +1,8 @@
+Code-Review+2: Adam Spiers <aspiers@suse.com>
+Workflow+1: Adam Spiers <aspiers@suse.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 08 Jun 2016 08:31:10 +0000
+Reviewed-on: https://review.openstack.org/326892
+Project: openstack/openstack-resource-agents
+Branch: refs/heads/stable/kilo
