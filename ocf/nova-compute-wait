@@ -150,6 +150,8 @@ END
 }
 
 nova_start() {
+    build_unfence_overlay
+
     state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | sed -e 's/.*value=//' | tr -d '"' )
     if [ "x$state" = x ]; then
 	: never been fenced
@@ -160,8 +162,8 @@ nova_start() {
 	sleep ${OCF_RESKEY_evacuation_delay}
 
     else
-	ocf_log info "Waiting for pending evacuations from ${NOVA_HOST}"
 	while [ "x$state" != "xno" ]; do
+	    ocf_log info "Waiting for pending evacuations from ${NOVA_HOST}"
 	    state=$(attrd_updater -p -n evacuate -N ${NOVA_HOST} | sed -e 's/.*value=//' | tr -d '"' )
 	    sleep 5
 	done
@@ -169,14 +171,22 @@ nova_start() {
 	ocf_log info "Pausing to give evacuations from ${NOVA_HOST} time to complete"
 	sleep ${OCF_RESKEY_evacuation_delay}
     fi
+
+    touch "$statefile"
+
     return $OCF_SUCCESS
 }
 
 nova_stop() {
+    rm -f "$statefile"
     return $OCF_SUCCESS
 }
 
 nova_monitor() {
+    if [ ! -f "$statefile" ]; then
+        return $OCF_NOT_RUNNING
+    fi
+
     return $OCF_SUCCESS
 }
 
@@ -184,16 +194,112 @@ nova_notify() {
     return $OCF_SUCCESS
 }
 
+build_unfence_overlay() {
+    fence_options=""
+
+    if [ -z "${OCF_RESKEY_auth_url}" ]; then
+	candidates=$(/usr/sbin/stonith_admin -l ${NOVA_HOST})
+	for candidate in ${candidates}; do
+	    pcs stonith show $d | grep -q fence_compute
+	    if [ $? = 0 ]; then
+		ocf_log info "Unfencing nova based on: $candidate"
+		fence_auth=$(pcs stonith show $candidate | grep Attributes: | sed -e s/Attributes:// -e s/-/_/g -e 's/[^ ]\+=/OCF_RESKEY_\0/g' -e s/passwd/password/g)
+		eval "export $fence_auth"
+		break
+	    fi
+	done
+    fi    
+
+    # Copied from NovaEvacuate 
+    if [ -z "${OCF_RESKEY_auth_url}" ]; then
+        ocf_exit_reason "auth_url not configured"
+        exit $OCF_ERR_CONFIGURED
+    fi
+
+    fence_options="${fence_options} -k ${OCF_RESKEY_auth_url}"
+
+    if [ -z "${OCF_RESKEY_username}" ]; then
+        ocf_exit_reason "username not configured"
+        exit $OCF_ERR_CONFIGURED
+    fi
+
+    fence_options="${fence_options} -l ${OCF_RESKEY_username}"
+
+    if [ -z "${OCF_RESKEY_password}" ]; then
+        ocf_exit_reason "password not configured"
+        exit $OCF_ERR_CONFIGURED
+    fi
+
+    fence_options="${fence_options} -p ${OCF_RESKEY_password}"
+
+    if [ -z "${OCF_RESKEY_tenant_name}" ]; then
+        ocf_exit_reason "tenant_name not configured"
+        exit $OCF_ERR_CONFIGURED
+    fi
+
+    fence_options="${fence_options} -t ${OCF_RESKEY_tenant_name}"
+
+    if [ -n "${OCF_RESKEY_domain}" ]; then
+        fence_options="${fence_options} -d ${OCF_RESKEY_domain}"
+    fi
+
+    if [ -n "${OCF_RESKEY_region_name}" ]; then
+        fence_options="${fence_options} \
+            --region-name ${OCF_RESKEY_region_name}"
+    fi
+
+    if [ -n "${OCF_RESKEY_insecure}" ]; then
+        if ocf_is_true "${OCF_RESKEY_insecure}"; then
+            fence_options="${fence_options} --insecure"
+        fi
+    fi
+
+    if [ -n "${OCF_RESKEY_no_shared_storage}" ]; then
+        if ocf_is_true "${OCF_RESKEY_no_shared_storage}"; then
+            fence_options="${fence_options} --no-shared-storage"
+        fi
+    fi
+
+    if [ -n "${OCF_RESKEY_endpoint_type}" ]; then
+        case ${OCF_RESKEY_endpoint_type} in
+            adminURL|publicURL|internalURL)
+                ;;
+            *)
+                ocf_exit_reason "endpoint_type ${OCF_RESKEY_endpoint_type}" \
+                    "not valid. Use adminURL or publicURL or internalURL"
+                exit $OCF_ERR_CONFIGURED
+                ;;
+        esac
+        fence_options="${fence_options} -e ${OCF_RESKEY_endpoint_type}"
+    fi
+
+    mkdir -p /run/systemd/system/openstack-nova-compute.service.d
+    cat<<EOF>/run/systemd/system/openstack-nova-compute.service.d/unfence-20.conf
+[Service]
+ExecStartPost=/sbin/fence_compute ${fence_options} -o on -n ${NOVA_HOST}
+EOF
+}
+
 nova_validate() {
     rc=$OCF_SUCCESS
 
     check_binary crudini
     check_binary nova-compute
+    check_binary fence_compute
 
     if [ ! -f /etc/nova/nova.conf ]; then
 	   ocf_exit_reason "/etc/nova/nova.conf not found"
 	   exit $OCF_ERR_CONFIGURED
     fi
+
+    # Is the state directory writable?
+    state_dir=$(dirname $statefile)
+    touch "$state_dir/$$"
+    if [ $? != 0 ]; then
+        ocf_exit_reason "Invalid state directory: $state_dir"
+        return $OCF_ERR_ARGS
+    fi
+    rm -f "$state_dir/$$"
 
     NOVA_HOST=$(crudini --get /etc/nova/nova.conf DEFAULT host 2>/dev/null)
     if [ $? = 1 ]; then
@@ -210,6 +316,8 @@ nova_validate() {
     fi
     return $rc
 }
+
+statefile="${HA_RSCTMP}/${OCF_RESOURCE_INSTANCE}.active"
 
 : ${OCF_RESKEY_evacuation_delay=120}
 case $__OCF_ACTION in
@@ -234,3 +342,4 @@ esac
 rc=$?
 ocf_log debug "${OCF_RESOURCE_INSTANCE} $__OCF_ACTION : $rc"
 exit $rc
+
