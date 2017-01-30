@@ -249,6 +249,7 @@ nova_notify() {
 nova_validate() {
     rc=$OCF_SUCCESS
     fence_options=""
+    local validate_host
 
     check_binary crudini
     check_binary nova-compute
@@ -330,11 +331,13 @@ nova_validate() {
         else
             NOVA_HOST=$(uname -n)
         fi
+        validate_host=0
+    else
+        validate_host=1
     fi
 
     # We only need to check a configured value, calculated ones are fine
-    crudini --get /etc/nova/nova.conf DEFAULT host 2>/dev/null
-    if [ $? = 0 ]; then
+    if [ $validate_host -eq 1 ]; then
         if [ "x${OCF_RESKEY_domain}" != x ]; then
             short_host=$(uname -n | awk -F. '{print $1}')
             if [ "x$NOVA_HOST" != "x${short_host}" ]; then
