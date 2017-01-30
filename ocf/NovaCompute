@@ -323,6 +323,7 @@ nova_validate() {
     # we take a chance here and hope that host is either not configured
     # or configured in nova.conf
 
+    local validate_host=1
     NOVA_HOST=$(crudini --get /etc/nova/nova.conf DEFAULT host 2>/dev/null)
     if [ $? = 1 ]; then
         if [ "x${OCF_RESKEY_domain}" != x ]; then
@@ -330,11 +331,11 @@ nova_validate() {
         else
             NOVA_HOST=$(uname -n)
         fi
+        validate_host=0
     fi
 
     # We only need to check a configured value, calculated ones are fine
-    crudini --get /etc/nova/nova.conf DEFAULT host 2>/dev/null
-    if [ $? = 0 ]; then
+    if [ $validate_host -eq 1 ]; then
         if [ "x${OCF_RESKEY_domain}" != x ]; then
             short_host=$(uname -n | awk -F. '{print $1}')
             if [ "x$NOVA_HOST" != "x${short_host}" ]; then
