@@ -1,0 +1,8 @@
+Code-Review+2: Adam Spiers <aspiers@suse.com>
+Workflow+1: Adam Spiers <aspiers@suse.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 31 Jan 2017 18:02:48 +0000
+Reviewed-on: https://review.openstack.org/427302
+Project: openstack/openstack-resource-agents
+Branch: refs/heads/stable/mitaka
