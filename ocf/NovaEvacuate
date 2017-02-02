@@ -206,7 +206,7 @@ handle_evacuations() {
             ocf_log notice "Initiating evacuation of $node"
 
             fence_compute ${fence_options} -o status -n ${node}
-            if [ $? = 0 ]; then
+            if [ $? = 1 ]; then
                 ocf_log info "Nova does not know about ${node}"
                 # Dont mark as no because perhaps nova is unavailable right now
                 continue
