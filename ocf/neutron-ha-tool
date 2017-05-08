@@ -6,9 +6,8 @@
 # This resource agent wraps the neutron-ha-tool Python script.
 # It can be used to monitor neutron for the availability of the
 # l3-agents and migrate routers away from agents that are
-# currently offline. Additionally it makes sure that dns and dhcp
-# configuration is synchronized across all dhcp-agents.  The
-# neutron-ha-tool was originally part of the openstack-network
+# currently offline.
+# The neutron-ha-tool was originally part of the openstack-network
 # cookbook for Chef. However as of icehouse it got dropped
 # from upstream, and is now maintained here:
 #
@@ -254,8 +253,6 @@ neutron_ha_tool_start() {
     if ${OCF_RESKEY_binary} --help | grep -q -- --retry; then
         retry="--retry"
     fi
-
-    ${OCF_RESKEY_binary} --replicate-dhcp $retry $INSECURE
 
     rc=$?
     if [ $rc -ne 0 ]; then
