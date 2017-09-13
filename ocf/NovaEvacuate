@@ -202,10 +202,15 @@ handle_evacuations() {
         esac
 
         if [ $need_evacuate = 1 ]; then
-            found=0
-            ocf_log notice "Initiating evacuation of $node"
+            fence_agent="fence_compute"
 
-            fence_compute ${fence_options} -o status -n ${node}
+            if have_binary fence_evacuate
+            then
+                fence_agent="fence_evacuate"
+            fi
+
+            ocf_log notice "Initiating evacuation of $node with $fence_agent"
+            $fence_agent ${fence_options} -o status -n ${node}
             if [ $? = 1 ]; then
                 ocf_log info "Nova does not know about ${node}"
                 # Dont mark as no because perhaps nova is unavailable right now
@@ -217,7 +222,7 @@ handle_evacuations() {
                 return $OCF_SUCCESS
             fi
 
-            fence_compute ${fence_options} -o off -n $node
+            $fence_agent ${fence_options} -o off -n $node
             rc=$?
 
             if [ $rc = 0 ]; then
@@ -252,7 +257,9 @@ evacuate_validate() {
     rc=$OCF_SUCCESS
     fence_options=""
 
-    check_binary fence_compute
+    if ! have_binary fence_evacuate
+       check_binary fence_compute
+    fi
 
     # Is the state directory writable?
     state_dir=$(dirname $statefile)
