@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Copyright 2015 Red Hat, Inc.
 #
@@ -24,7 +24,7 @@
 #######################################################################
 
 meta_data() {
-    cat <<END
+	cat <<END
 <?xml version="1.0"?>
 <!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
 <resource-agent name="NovaEvacuate" version="1.0">
@@ -50,7 +50,6 @@ Authorization URL for connecting to keystone in admin context
 Username for connecting to keystone in admin context
 </longdesc>
 <shortdesc lang="en">Username</shortdesc>
-<content type="string" default="" />
 </parameter>
 
 <parameter name="password" unique="0" required="1">
@@ -67,14 +66,6 @@ Tenant name for connecting to keystone in admin context.
 Note that with Keystone V3 tenant names are only unique within a domain.
 </longdesc>
 <shortdesc lang="en">Tenant name</shortdesc>
-<content type="string" default="" />
-</parameter>
-
-<parameter name="domain" unique="0" required="0">
-<longdesc lang="en">
-DNS domain in which hosts live, useful when the cluster uses short names and nova uses FQDN
-</longdesc>
-<shortdesc lang="en">DNS domain</shortdesc>
 <content type="string" default="" />
 </parameter>
 
@@ -106,12 +97,7 @@ This option should be used with caution.
 
 <parameter name="no_shared_storage" unique="0" required="0">
 <longdesc lang="en">
-Indicate that nova storage for instances is not shared across compute
-nodes. This must match the reality of how nova storage is configured!
-Otherwise VMs could end up in error state upon evacuation. When
-storage is non-shared, instances on dead hypervisors will be rebuilt
-from their original image or volume, so anything on ephemeral storage
-will be lost.
+Disable shared storage recovery for instances. Use at your own risk!
 </longdesc>
 <shortdesc lang="en">Disable shared storage recovery for instances</shortdesc>
 <content type="boolean" default="0" />
@@ -135,12 +121,12 @@ END
 # don't exit on TERM, to test that lrmd makes sure that we do exit
 trap sigterm_handler TERM
 sigterm_handler() {
-    ocf_log info "They use TERM to bring us down. No such luck."
-    return
+	ocf_log info "They use TERM to bring us down. No such luck."
+	return
 }
 
 evacuate_usage() {
-    cat <<END
+	cat <<END
 usage: $0 {start|stop|monitor|validate-all|meta-data}
 
 Expects to have a fully populated OCF RA-compliant environment set.
@@ -159,75 +145,77 @@ evacuate_start() {
 }
 
 update_evacuation() {
-    attrd_updater -p -n evacuate -Q -N ${1} -U ${2}
+    attrd_updater -p -n evacuate -Q -N ${1} -v ${2}
     arc=$?
     if [ ${arc} != 0 ]; then
-        ocf_log warn "Can not set evacuation state of ${1} to ${2}: ${arc}"
+	ocf_log warn "Can not set evacuation state of ${1} to ${2}: ${arc}"
     fi
     return ${arc}
 }
 
 handle_evacuations() {
     while [ $# -gt 0 ]; do
-        node=$1
-        state=$2
-        shift; shift;
-        need_evacuate=0
+	node=$1 
+	state=$2
+	shift; shift;
+	need_evacuate=0
 
-        case $state in
-            "")
-                ;;
-            no)
-                ocf_log debug "$node is either fine or already handled"
-                ;;
-            yes) need_evacuate=1
-                ;;
-            *@*)
-                where=$(echo $state | awk -F@ '{print $1}')
-                when=$(echo $state | awk -F@ '{print $2}')
-                now=$(date +%s)
+	case $state in
+	    "")
+	        ;;
+	    no)
+		ocf_log debug "$node is either fine or already handled"
+		;;
+	    yes) need_evacuate=1
+		;; 
+	    *@*)
+		where=$(echo $state | awk -F@ '{print $1}')
+		when=$(echo $state | awk -F@ '{print $2}')
+		now=$(date +%s)
 
-                if [ $(($now - $when)) -gt 60 ]; then
-                    ocf_log info "Processing partial evacuation of $node by" \
-                        "$where at $when"
-                    need_evacuate=1
-                else
-                    # Give some time for any in-flight evacuations to either
-                    # complete or fail Nova won't react well if there are two
-                    # overlapping requests
-                    ocf_log info "Deferring processing partial evacuation of" \
-                        "$node by $where at $when"
-                fi
-                ;;
-        esac
+		if [ $(($now - $when)) -gt 60 ]; then
+		    ocf_log info "Processing partial evacuation of $node by $where at $when"
+		    need_evacuate=1
+		else
+		    # Give some time for any in-flight evacuations to either complete or fail
+		    # Nova won't react well if there are two overlapping requests 
+		    ocf_log info "Deferring processing partial evacuation of $node by $where at $when"
+		fi
+		;;
+	esac
 
-        if [ $need_evacuate = 1 ]; then
-            found=0
-            ocf_log notice "Initiating evacuation of $node"
+	if [ $need_evacuate = 1 ]; then
+	    fence_agent="fence_compute"
 
-            fence_compute ${fence_options} -o status -n ${node}
-            if [ $? = 1 ]; then
-                ocf_log info "Nova does not know about ${node}"
-                # Dont mark as no because perhaps nova is unavailable right now
-                continue
-            fi
+	    if have_binary fence_evacuate
+	    then
+		fence_agent="fence_evacuate"
+	    fi
 
-            update_evacuation ${node} "$(uname -n)@$(date +%s)"
-            if [ $? != 0 ]; then
-                return $OCF_SUCCESS
-            fi
+	    ocf_log notice "Initiating evacuation of $node with $fence_agent"
+	    $fence_agent ${fence_options} -o status -n ${node}
+	    if [ $? = 1 ]; then
+		ocf_log info "Nova does not know about ${node}"
+		# Dont mark as no because perhaps nova is unavailable right now
+		continue
+	    fi
 
-            fence_compute ${fence_options} -o off -n $node
-            rc=$?
+	    update_evacuation ${node} "$(uname -n)@$(date +%s)"
+	    if [ $? != 0 ]; then
+		return $OCF_SUCCESS
+	    fi
 
-            if [ $rc = 0 ]; then
-                update_evacuation ${node} no
-                ocf_log notice "Completed evacuation of $node"
-            else
-                ocf_log warn "Evacuation of $node failed: $rc"
-                update_evacuation ${node} yes
-            fi
-        fi
+	    $fence_agent ${fence_options} -o off -n $node
+	    rc=$?
+
+	    if [ $rc = 0 ]; then
+		update_evacuation ${node} no
+		ocf_log notice "Completed evacuation of $node"
+	    else
+		ocf_log warn "Evacuation of $node failed: $rc"
+		update_evacuation ${node} yes
+	    fi
+	fi
     done
 
     return $OCF_SUCCESS
@@ -235,12 +223,11 @@ handle_evacuations() {
 
 evacuate_monitor() {
     if [ ! -f "$statefile" ]; then
-        return $OCF_NOT_RUNNING
+	return $OCF_NOT_RUNNING
     fi
 
     handle_evacuations $(
-        attrd_updater -n evacuate -A \
-            2> >(grep -v "attribute does not exist" 1>&2) |
+        attrd_updater -n evacuate -A |
             sed 's/ value=""/ value="no"/' |
             tr '="' '  ' |
             awk '{print $4" "$6}'
@@ -252,48 +239,47 @@ evacuate_validate() {
     rc=$OCF_SUCCESS
     fence_options=""
 
-    check_binary fence_compute
+    
+    if ! have_binary fence_evacuate
+       check_binary fence_compute
+    fi
 
-    # Is the state directory writable?
+    # Is the state directory writable? 
     state_dir=$(dirname $statefile)
     touch "$state_dir/$$"
     if [ $? != 0 ]; then
-        ocf_exit_reason "Invalid state directory: $state_dir"
-        return $OCF_ERR_ARGS
+	ocf_exit_reason "Invalid state directory: $state_dir"
+	return $OCF_ERR_ARGS
     fi
     rm -f "$state_dir/$$"
 
     if [ -z "${OCF_RESKEY_auth_url}" ]; then
-        ocf_exit_reason "auth_url not configured"
-        exit $OCF_ERR_CONFIGURED
+	   ocf_exit_reason "auth_url not configured"
+	   exit $OCF_ERR_CONFIGURED
     fi
 
     fence_options="${fence_options} -k ${OCF_RESKEY_auth_url}"
 
     if [ -z "${OCF_RESKEY_username}" ]; then
-        ocf_exit_reason "username not configured"
-        exit $OCF_ERR_CONFIGURED
+	   ocf_exit_reason "username not configured"
+	   exit $OCF_ERR_CONFIGURED
     fi
 
     fence_options="${fence_options} -l ${OCF_RESKEY_username}"
 
     if [ -z "${OCF_RESKEY_password}" ]; then
-        ocf_exit_reason "password not configured"
-        exit $OCF_ERR_CONFIGURED
+	   ocf_exit_reason "password not configured"
+	   exit $OCF_ERR_CONFIGURED
     fi
 
     fence_options="${fence_options} -p ${OCF_RESKEY_password}"
 
     if [ -z "${OCF_RESKEY_tenant_name}" ]; then
-        ocf_exit_reason "tenant_name not configured"
-        exit $OCF_ERR_CONFIGURED
+	   ocf_exit_reason "tenant_name not configured"
+	   exit $OCF_ERR_CONFIGURED
     fi
 
     fence_options="${fence_options} -t ${OCF_RESKEY_tenant_name}"
-
-    if [ -n "${OCF_RESKEY_domain}" ]; then
-        fence_options="${fence_options} -d ${OCF_RESKEY_domain}"
-    fi
 
     if [ -n "${OCF_RESKEY_region_name}" ]; then
         fence_options="${fence_options} \
@@ -307,26 +293,24 @@ evacuate_validate() {
     fi
 
     if [ -n "${OCF_RESKEY_no_shared_storage}" ]; then
-        if ocf_is_true "${OCF_RESKEY_no_shared_storage}"; then
-            fence_options="${fence_options} --no-shared-storage"
-        fi
+	if ocf_is_true "${OCF_RESKEY_no_shared_storage}"; then
+	    fence_options="${fence_options} --no-shared-storage"
+	fi
     fi
 
     if [ -n "${OCF_RESKEY_endpoint_type}" ]; then
-        case ${OCF_RESKEY_endpoint_type} in
-            adminURL|publicURL|internalURL)
-                ;;
-            *)
-                ocf_exit_reason "endpoint_type ${OCF_RESKEY_endpoint_type}" \
-                    "not valid. Use adminURL or publicURL or internalURL"
-                exit $OCF_ERR_CONFIGURED
-                ;;
-        esac
-        fence_options="${fence_options} -e ${OCF_RESKEY_endpoint_type}"
+	case ${OCF_RESKEY_endpoint_type} in
+	    adminURL|publicURL|internalURL) ;;
+	    *)
+		ocf_exit_reason "endpoint_type ${OCF_RESKEY_endpoint_type} not valid. Use adminURL or publicURL or internalURL"
+		exit $OCF_ERR_CONFIGURED
+	    ;;
+	esac
+	fence_options="${fence_options} -e ${OCF_RESKEY_endpoint_type}"
     fi
 
     if [ $rc != $OCF_SUCCESS ]; then
-        exit $rc
+	exit $rc
     fi
     return $rc
 }
@@ -335,31 +319,31 @@ statefile="${HA_RSCTMP}/${OCF_RESOURCE_INSTANCE}.active"
 
 case $__OCF_ACTION in
     start)
-        evacuate_validate
-        evacuate_start
-        ;;
+	evacuate_validate
+	evacuate_start
+	;;
     stop)
-        evacuate_stop
-        ;;
+	evacuate_stop
+	;;
     monitor)
-        evacuate_validate
-        evacuate_monitor
-        ;;
+	evacuate_validate
+	evacuate_monitor
+	;;
     meta-data)
-        meta_data
-        exit $OCF_SUCCESS
-        ;;
+	meta_data
+	exit $OCF_SUCCESS
+	;;
     usage|help)
-        evacuate_usage
-        exit $OCF_SUCCESS
-        ;;
+	evacuate_usage
+	exit $OCF_SUCCESS
+	;;
     validate-all)
-        exit $OCF_SUCCESS
-        ;;
+	exit $OCF_SUCCESS
+	;;
     *)
-        evacuate_usage
-        exit $OCF_ERR_UNIMPLEMENTED
-        ;;
+	evacuate_usage
+	exit $OCF_ERR_UNIMPLEMENTED
+	;;
 esac
 rc=$?
 ocf_log debug "${OCF_RESOURCE_INSTANCE} $__OCF_ACTION : $rc"
