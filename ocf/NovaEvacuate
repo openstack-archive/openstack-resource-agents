@@ -125,6 +125,14 @@ Enable extra logging from the evacuation process
 <content type="boolean" default="0" />
 </parameter>
 
+<parameter name="debug_file" unique="0" required="0">
+<longdesc lang="en">
+Enable extra logging from fence_compute
+</longdesc>
+<shortdesc lang="en">Enable logging from fence_compute</shortdesc>
+<content type="string" default="" />
+</parameter>
+
 </parameters>
 
 <actions>
@@ -330,6 +338,10 @@ evacuate_validate() {
         if ocf_is_true "${OCF_RESKEY_verbose}"; then
             fence_options="${fence_options} --verbose"
         fi
+    fi
+
+    if [ -n "${OCF_RESKEY_debug_file}" ]; then
+        fence_options="${fence_options} --debug-file ${OCF_RESKEY_debug_file}"
     fi
 
     if [ -n "${OCF_RESKEY_endpoint_type}" ]; then
