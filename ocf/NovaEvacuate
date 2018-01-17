@@ -212,8 +212,7 @@ handle_evacuations() {
         if [ $need_evacuate = 1 ]; then
             fence_agent="fence_compute"
 
-            if have_binary fence_evacuate
-            then
+            if have_binary fence_evacuate; then
                 fence_agent="fence_evacuate"
             fi
 
@@ -265,7 +264,7 @@ evacuate_validate() {
     rc=$OCF_SUCCESS
     fence_options=""
 
-    if ! have_binary fence_evacuate
+    if ! have_binary fence_evacuate; then
        check_binary fence_compute
     fi
 
