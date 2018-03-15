@@ -1,0 +1,115 @@
+#!/bin/sh
+#
+
+#######################################################################
+# Initialization:
+
+: ${OCF_FUNCTIONS_DIR=${OCF_ROOT}/lib/heartbeat}
+. ${OCF_FUNCTIONS_DIR}/ocf-shellfuncs
+
+# Define 'driver' parameter in metadata.
+meta_data() {
+        cat <<END
+<?xml version="1.0"?>
+<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
+<resource-agent name="nova-host-alerter">
+<version>1.0</version>
+
+<longdesc lang="en">
+hoge
+</longdesc>
+<shortdesc lang="en"></shortdesc>
+
+<parameters>
+<parameter name="driver" unique="1" required="1">
+<longdesc lang="en">
+Specify the driver of recovery. Currently, only "masakari" is supported.
+</longdesc>
+<shortdesc lang="en">Driver of recovery.</shortdesc>
+<content type="string" />
+</parameter>
+</parameters>
+
+<actions>
+<action name="start" timeout="60" />
+<action name="stop" timeout="60" />
+<action name="status" timeout="60" />
+<action name="monitor" interval="60" timeout="60" />
+<action name="meta-data" timeout="5" />
+</actions>
+</resource-agent>
+END
+        return $OCF_SUCCESS
+}
+
+SERVICE=nova-host-alerter
+OP=$1
+
+# NOTE: It is assumed that masakari_driver.py exists in same directory with
+# nova-host-alerter.
+SCRIPT_DIR=$(cd $(dirname $0);pwd)
+MASAKARI_DRIVER=${SCRIPT_DIR}/masakari_driver.py
+
+nova_host_alerter_start() {
+        touch "$statefile"
+        # Do not involve monitor here so that the start timeout can be low
+        return $?
+}
+
+nova_host_alerter_stop() {
+        rm -f "$statefile"
+        return $OCF_SUCCESS
+}
+
+nova_host_alerter_monitor() {
+        case "$OCF_RESKEY_driver" in
+            "masakari")
+                # Pass the list of failure hostnames to MASAKARI_DRIVERS.
+                attrd_updater -n evacuate -A \
+                    2> >(grep -v "attribute does not exist" 1>&2) |
+                    sed 's/ value=""/ value="no"/' |
+                    tr '="' '  ' |
+                    awk '{print $4" "$6}' |
+                    $MASAKARI_DRIVER
+                retval=$?
+                if [ $retval -eq 0 ]; then
+                    ocf_log info "Succeeded in sending a notification."
+                else
+                    ocf_log err "$retval host failure notification(s) failed."
+                fi
+                ;;
+            *)
+                ocf_log err "Driver type '$OCF_RESKEY_driver' is not supported."
+                return $OCF_ERR_CONFIGURED
+                ;;
+        esac
+        return $OCF_SUCCESS
+}
+
+statefile="${HA_RSCTMP}/${OCF_RESOURCE_INSTANCE}.active"
+
+case $OP in
+start)
+        nova_host_alerter_start
+        RC=$?
+        ;;
+stop)
+        nova_host_alerter_stop
+        RC=$?
+        ;;
+monitor)
+        nova_host_alerter_monitor
+        RC=$?
+        ;;
+meta-data)
+        meta_data
+        RC=$?
+        ;;
+validate-all)
+        RC=$OCF_SUCCESS
+        ;;
+*)
+        RC=$OCF_ERR_UNIMPLEMENTED
+        ;;
+esac
+exit $RC
