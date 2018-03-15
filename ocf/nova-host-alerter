@@ -1,0 +1,150 @@
+#!/bin/sh
+#
+
+# NOTE: This code is PoC.
+#       So please note that this is different from the real nova-host-alerter.
+
+#######################################################################
+# Initialization:
+
+: ${OCF_FUNCTIONS_DIR=${OCF_ROOT}/lib/heartbeat}
+. ${OCF_FUNCTIONS_DIR}/ocf-shellfuncs
+
+# Define 'driver' parameter in metadata.
+meta_data() {
+	cat <<END
+<?xml version="1.0"?>
+<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
+<resource-agent name="nova-host-alerter">
+<version>1.0</version>
+
+<longdesc lang="en">
+hoge
+</longdesc>
+<shortdesc lang="en"></shortdesc>
+
+<parameters>
+<parameter name="driver" unique="1" required="1">
+<longdesc lang="en">
+Specify the driver of recovery. "masakari" or "mistral" is required to specify.
+</longdesc>
+<shortdesc lang="en">Driver of recovery.</shortdesc>
+<content type="string" />
+</parameter>
+</parameters>
+
+<actions>
+<action name="start" timeout="60" />
+<action name="stop" timeout="60" />
+<action name="status" timeout="60" />
+<action name="monitor" interval="60" timeout="60" />
+<action name="meta-data" timeout="5" />
+</actions>
+</resource-agent>
+END
+	return $OCF_SUCCESS
+}
+
+SERVICE=nova-host-alerter
+OP=$1
+OCF_RESKEY_state=/var/tmp/nova-host-alerter.tmp
+
+# NOTE: It is assumed that masakari_driver.py exists in same directory with
+# nova-host-alerter.
+SCRIPT_DIR=$(cd $(dirname $0);pwd)
+MASAKARI_DRIVER=${SCRIPT_DIR}/masakari_driver.py
+
+nova_host_alerter_start() {
+	nova_host_alerter_status
+	if [ $? -eq $OCF_SUCCESS ]
+	then
+		ocf_log info "`basename $0` is already running."
+		return $OCF_SUCCESS
+	fi
+
+	touch $OCF_RESKEY_state
+	return $OCF_SUCCESS
+}
+
+nova_host_alerter_stop() {
+	nova_host_alerter_status
+	RC=$?
+	case "$RC" in
+	${OCF_NOT_RUNNING})
+		ocf_log info "`basename $0` is not running."
+		return $OCF_SUCCESS
+		;;
+	${OCF_SUCCESS})
+		ocf_log info "stopping..."
+		rm $OCF_RESKEY_state
+		return $OCF_SCCESS
+		;;
+	esac
+	return $OCF_ERR_GENERIC
+}
+
+nova_host_alerter_status() {
+        [ -f $OCF_RESKEY_state ] || return $OCF_NOT_RUNNING
+
+        # This condition is meaningless since this code is PoC.
+        # Actually, it should be condition that "if nova-host-alerter detects
+        # a failure".
+        FLG_FILE=/tmp/nova-host-alerter-flg
+        if [ -e $FLG_FILE ]; then
+            case "$OCF_RESKEY_driver" in
+                "masakari")
+                    # Execute masakari_driver.py. Please note that
+                    # masakari_driver.py must have executable mode.
+                    # The failure node is hard-corded since this code is PoC,
+                    # but actually the failure node should be set by some
+                    # kind of logic. Here's how to call masakari_driver.py.
+                    FAILURE_NODE="compute-node1"
+                    $MASAKARI_DRIVER "$FAILURE_NODE"
+                    retval=$?
+                    if [ $retval -eq 0 ]; then
+		        ocf_log info "Succeeded in sending a notification."
+                    else
+		        ocf_log err "Failed to send a notification."
+                    fi
+                    rm -rf $FLG_FILE
+                    ;;
+                "mistral")
+                    # Some logics.
+                    ;;
+                *)
+                    # Some logics.
+                    ;;
+            esac
+        fi
+        return $OCF_SUCCESS
+}
+
+case $OP in
+start)
+	nova_host_alerter_start
+	RC=$?
+	;;
+stop)
+	nova_host_alerter_stop
+	RC=$?
+	;;
+status)
+	nova_host_alerter_status
+	RC=$?
+	;;
+monitor)
+	nova_host_alerter_status
+	RC=$?
+	;;
+meta-data)
+	meta_data
+	RC=$?
+	;;
+validate-all)
+	RC=$OCF_SUCCESS
+	;;
+*)
+	RC=$OCF_ERR_UNIMPLEMENTED
+	;;
+esac
+exit $RC
